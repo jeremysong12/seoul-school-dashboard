@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Insight SEOUL · 초교 폐교 위기 예측</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+/* ── RESET ── */
+*{margin:0;padding:0;box-sizing:border-box;}
+
+:root{
+  --bg:#0a0e1a;
+  --bg2:#0d1220;
+  --card:#111827;
+  --card2:#162032;
+  --border:#1e2d4a;
+  --border2:#253552;
+  --text:#e2e8f0;
+  --text2:#94a3b8;
+  --text3:#64748b;
+  --safe:#22c55e;
+  --high:#f97316;
+  --danger:#ef4444;
+  --accent:#3b82f6;
+  --accent2:#8b5cf6;
+}
+
+body{
+  font-family:'Noto Sans KR',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+/* ── HEADER ── */
+.hdr{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:0 24px;
+  height:54px;
+  background:#060c1a;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  z-index:100;
+}
+.logo-box{
+  width:32px;height:32px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Space Mono',monospace;
+  font-weight:700;font-size:15px;color:#fff;
+  flex-shrink:0;
+}
+.hdr-title{
+  font-size:16px;font-weight:700;letter-spacing:-.4px;white-space:nowrap;
+}
+.hdr-sub{font-size:12px;font-weight:400;color:var(--text3);margin-left:2px;}
+.hdr-spacer{flex:1;}
+.hdr-year{
+  display:flex;align-items:center;gap:6px;
+  font-family:'Space Mono',monospace;font-size:11px;
+  color:var(--text3);letter-spacing:1px;
+}
+.year-num{
+  font-size:28px;font-weight:700;color:var(--accent);
+  letter-spacing:-2px;line-height:1;
+}
+
+/* ── MAIN 3-PANEL LAYOUT ── */
+.layout{
+  flex:1;
+  display:grid;
+  grid-template-columns:280px 1fr 320px;
+  overflow:hidden;
+  min-height:0;
+}
+
+/* ── LEFT SIDEBAR ── */
+.sidebar{
+  display:flex;flex-direction:column;
+  background:var(--bg2);
+  border-right:1px solid var(--border);
+  overflow:hidden;
+  min-height:0;
+}
+.search-wrap{
+  padding:12px 12px 6px;
+  flex-shrink:0;
+}
+.search-box{
+  display:flex;align-items:center;gap:8px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:8px 12px;
+}
+.search-icon{color:var(--text3);font-size:13px;flex-shrink:0;}
+.search-input{
+  flex:1;border:none;background:transparent;
+  color:var(--text);font-size:13px;
+  font-family:'Noto Sans KR',sans-serif;
+  outline:none;
+}
+.search-input::placeholder{color:var(--text3);}
+.search-box:focus-within{border-color:var(--accent);}
+
+.filter-row{
+  display:flex;gap:5px;
+  padding:0 12px 8px;
+  flex-shrink:0;
+}
+.filter-btn{
+  flex:1;
+  padding:5px 4px;
+  border-radius:6px;
+  border:1px solid var(--border2);
+  background:var(--card);
+  color:var(--text3);
+  font-size:11px;font-weight:600;
+  font-family:'Noto Sans KR',sans-serif;
+  cursor:pointer;
+  transition:all .15s;
+  white-space:nowrap;
+}
+.filter-btn:hover{color:var(--text2);border-color:var(--border2);}
+.filter-btn.on-all   {background:rgba(59,130,246,.15);border-color:var(--accent);color:var(--accent);}
+.filter-btn.on-safe  {background:rgba(34,197,94,.15);border-color:var(--safe);color:var(--safe);}
+.filter-btn.on-high  {background:rgba(249,115,22,.15);border-color:var(--high);color:var(--high);}
+.filter-btn.on-danger{background:rgba(239,68,68,.15);border-color:var(--danger);color:var(--danger);}
+
+.list-meta{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 16px 8px;
+  font-size:11px;flex-shrink:0;
+}
+.list-meta-count{color:var(--text2);font-weight:600;}
+.sort-toggle{display:flex;gap:4px;}
+.sort-btn{
+  font-size:10px;font-weight:600;padding:3px 8px;
+  border-radius:5px;border:1px solid var(--border2);
+  background:var(--card);color:var(--text3);
+  cursor:pointer;font-family:'Noto Sans KR',sans-serif;
+  transition:all .15s;
+}
+.sort-btn.active{background:rgba(59,130,246,.15);border-color:var(--accent);color:var(--accent);}
+.sort-btn:hover:not(.active){color:var(--text2);}
+
+.school-list{
+  flex:1;overflow-y:auto;
+  padding:0 8px 8px;
+}
+.school-list::-webkit-scrollbar{width:4px;}
+.school-list::-webkit-scrollbar-track{background:transparent;}
+.school-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+.school-card{
+  padding:10px 12px;
+  border-radius:8px;
+  border:1px solid transparent;
+  cursor:pointer;
+  margin-bottom:5px;
+  background:var(--card);
+  transition:border-color .15s,background .15s;
+}
+.school-card:hover{border-color:var(--border2);background:var(--card2);}
+.school-card.active{
+  border-color:var(--accent);
+  background:rgba(59,130,246,.08);
+}
+.card-top{
+  display:flex;align-items:center;
+  justify-content:space-between;gap:8px;
+  margin-bottom:3px;
+}
+.card-name{
+  font-size:13px;font-weight:600;letter-spacing:-.3px;
+  flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.card-sub{font-size:11px;color:var(--text3);}
+
+/* ── 등급 배지 ── */
+.grade-badge{
+  font-size:10px;font-weight:700;
+  padding:2px 8px;border-radius:4px;
+  white-space:nowrap;flex-shrink:0;
+  font-family:'Space Mono',monospace;letter-spacing:.3px;
+}
+.badge-safe{background:rgba(34,197,94,.12);color:var(--safe);border:1px solid rgba(34,197,94,.25);}
+.badge-high{background:rgba(249,115,22,.12);color:var(--high);border:1px solid rgba(249,115,22,.25);}
+.badge-danger{background:rgba(239,68,68,.12);color:var(--danger);border:1px solid rgba(239,68,68,.25);}
+
+/* ── MAP CENTER ── */
+.map-wrap{position:relative;overflow:hidden;}
+#map{width:100%;height:100%;}
+
+.risk-legend{
+  position:absolute;top:14px;left:14px;z-index:900;
+  background:rgba(255,255,255,.97);
+  border-radius:10px;
+  padding:12px 16px;
+  box-shadow:0 2px 16px rgba(0,0,0,.15);
+  pointer-events:none;
+  min-width:180px;
+}
+.legend-title{
+  font-size:10px;font-weight:700;color:#374151;
+  letter-spacing:.8px;text-transform:uppercase;
+  margin-bottom:9px;
+}
+.legend-row{
+  display:flex;align-items:flex-start;gap:8px;
+  margin-bottom:7px;
+}
+.legend-row:last-child{margin-bottom:0;}
+.legend-icon{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid rgba(255,255,255,.8);}
+.legend-text{}
+.legend-name{font-size:12px;font-weight:700;color:#111827;line-height:1.2;}
+.legend-desc{font-size:10px;color:#6b7280;margin-top:1px;}
+.legend-divider{border:none;border-top:1px solid #e5e7eb;margin:8px 0;}
+.legend-fac-row{display:flex;align-items:center;gap:7px;margin-bottom:5px;font-size:11px;color:#374151;}
+.legend-fac-row:last-child{margin-bottom:0;}
+.legend-fac-icon{font-size:14px;width:20px;text-align:center;}
+
+/* ── RIGHT DETAIL PANEL ── */
+.detail-panel{
+  background:var(--bg2);
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow-y:auto;
+  min-height:0;
+}
+.detail-panel::-webkit-scrollbar{width:4px;}
+.detail-panel::-webkit-scrollbar-track{background:transparent;}
+.detail-panel::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+.detail-empty{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  color:var(--text3);gap:10px;padding:24px;
+}
+.empty-icon{font-size:36px;opacity:.35;}
+.empty-text{font-size:13px;letter-spacing:-.2px;text-align:center;line-height:1.6;}
+
+.detail-hdr{
+  padding:16px 18px 14px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.detail-label{
+  font-size:9px;font-weight:700;color:var(--accent);
+  letter-spacing:1.2px;text-transform:uppercase;
+  margin-bottom:8px;
+}
+.detail-name{
+  font-size:17px;font-weight:700;letter-spacing:-.5px;
+  margin-bottom:3px;line-height:1.3;
+}
+.detail-dong{font-size:11px;color:var(--text3);margin-bottom:10px;}
+.detail-grade-large{
+  font-size:12px;font-weight:700;
+  padding:5px 14px;border-radius:6px;
+  display:inline-block;
+}
+
+.detail-section{
+  padding:14px 18px;
+  border-bottom:1px solid var(--border);
+}
+.detail-section:last-child{border-bottom:none;}
+.detail-section-title{
+  font-size:9px;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:1px;
+  margin-bottom:10px;
+}
+
+/* 신입생 추이 차트 */
+.enroll-chart-wrap{position:relative;height:140px;}
+
+/* 시설부담지수 */
+.fac-row{margin-bottom:10px;}
+.fac-row:last-child{margin-bottom:0;}
+.fac-label-row{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:5px;
+}
+.fac-name{font-size:11px;color:var(--text2);}
+.fac-val{
+  font-size:11px;font-weight:700;
+  font-family:'Space Mono',monospace;
+}
+.fac-bar-bg{
+  background:var(--border);border-radius:3px;
+  height:4px;overflow:hidden;
+}
+.fac-bar-fill{
+  height:100%;border-radius:3px;
+  transition:width .5s ease;
+}
+
+.detail-info-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  margin-top:2px;
+}
+.detail-info-cell{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:7px;padding:9px 12px;
+}
+.info-label{font-size:10px;color:var(--text3);margin-bottom:4px;}
+.info-val{font-size:15px;font-weight:700;font-family:'Space Mono',monospace;letter-spacing:-.5px;}
+
+.warning-box{
+  margin:12px 18px 0;
+  background:rgba(239,68,68,.06);
+  border:1px solid rgba(239,68,68,.2);
+  border-radius:8px;padding:9px 12px;
+  font-size:11px;color:var(--danger);line-height:1.5;
+}
+.warning-box.high-warn{
+  background:rgba(249,115,22,.06);
+  border-color:rgba(249,115,22,.2);
+  color:var(--high);
+}
+
+/* ── BOTTOM TIMELINE ── */
+.timeline{
+  height:62px;flex-shrink:0;
+  background:var(--card);
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:16px;
+  padding:0 20px;
+}
+.play-btn{
+  width:36px;height:36px;
+  background:var(--accent);
+  border:none;border-radius:50%;
+  color:#fff;font-size:13px;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  transition:background .15s;
+}
+.play-btn:hover{background:#2563eb;}
+.play-btn.playing{background:#ef4444;}
+.play-btn.playing:hover{background:#dc2626;}
+
+.slider-wrap{flex:1;position:relative;}
+.year-slider{
+  width:100%;
+  -webkit-appearance:none;appearance:none;
+  height:4px;
+  background:var(--border);
+  border-radius:2px;outline:none;cursor:pointer;
+}
+.year-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:16px;height:16px;
+  background:var(--accent);
+  border-radius:50%;border:2px solid #fff;
+  cursor:pointer;
+  box-shadow:0 0 0 3px rgba(59,130,246,.25);
+}
+.slider-ticks{
+  display:flex;justify-content:space-between;
+  padding:0 2px;margin-top:5px;
+}
+.slider-ticks span{
+  font-size:9px;color:var(--text3);
+  font-family:'Space Mono',monospace;
+}
+
+.closure-stat{
+  font-size:9px;color:var(--text3);
+  letter-spacing:.5px;text-align:right;
+  white-space:nowrap;line-height:1.4;
+  text-transform:uppercase;
+}
+.closure-num{
+  font-size:24px;font-weight:900;
+  font-family:'Space Mono',monospace;
+  color:var(--danger);letter-spacing:-1px;
+  display:block;margin-top:1px;
+}
+
+/* ── TABS ── */
+.tab-nav{
+  display:flex;gap:3px;
+  background:rgba(255,255,255,.05);
+  border-radius:8px;padding:3px;
+}
+.tab-btn{
+  padding:5px 22px;border-radius:6px;border:none;
+  background:transparent;color:var(--text3);
+  font-size:13px;font-weight:600;font-family:'Noto Sans KR',sans-serif;
+  cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.tab-btn.active{background:var(--accent);color:#fff;}
+.tab-btn:hover:not(.active){background:rgba(255,255,255,.07);color:var(--text2);}
+
+/* ── PAGE WRAPPERS ── */
+.page{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
+
+/* ── STATS PAGE ── */
+.stats-wrap{
+  flex:1;overflow-y:auto;
+  padding:24px 28px;
+  display:flex;flex-direction:column;gap:18px;
+  min-height:0;
+}
+.stats-wrap::-webkit-scrollbar{width:4px;}
+.stats-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+/* 2x2 stat grid */
+.stats-top-row{display:flex;gap:14px;flex:1;min-height:0;}
+.stat-grid-2x2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  grid-template-rows:1fr 1fr;
+  gap:12px;
+  flex:1.35;min-width:0;
+}
+.stat-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:24px 28px 20px;
+  position:relative;overflow:hidden;
+  transition:border-color .2s;
+}
+.stat-card:hover{border-color:var(--border2);}
+.stat-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;
+  height:3px;border-radius:12px 12px 0 0;
+}
+.stat-card.sc-danger::before{background:var(--danger);}
+.stat-card.sc-high::before  {background:var(--high);}
+.stat-card.sc-safe::before  {background:var(--safe);}
+.stat-card.sc-total::before {background:var(--accent);}
+.stat-label{
+  font-size:11px;font-weight:700;color:var(--text3);
+  letter-spacing:.6px;text-transform:uppercase;margin-bottom:12px;
+}
+.stat-num{
+  font-size:56px;font-weight:900;
+  font-family:'Space Mono',monospace;
+  letter-spacing:-3px;line-height:1;
+}
+.stat-card.sc-danger .stat-num{color:var(--danger);}
+.stat-card.sc-high   .stat-num{color:var(--high);}
+.stat-card.sc-safe   .stat-num{color:var(--safe);}
+.stat-card.sc-total  .stat-num{color:var(--accent);}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:10px;}
+
+/* chart cards */
+.chart-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:18px 20px;
+  display:flex;flex-direction:column;
+}
+.chart-card.hist-card{flex:1;min-height:0;}
+.chart-card.trend-row{flex-shrink:0;height:210px;}
+.chart-card-title{
+  font-size:11px;font-weight:700;color:var(--text2);
+  letter-spacing:-.2px;margin-bottom:12px;flex-shrink:0;
+}
+.chart-canvas-wrap{flex:1;position:relative;min-height:0;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="logo-box">S</div>
+  <div class="hdr-title">
+    Insight SEOUL<span class="hdr-sub"> | 초교 폐교 위기 예측</span>
+  </div>
+  <div class="hdr-spacer"></div>
+  <nav class="tab-nav">
+    <button id="tabStats" class="tab-btn active" onclick="setPage('stats')">기초 현황</button>
+    <button id="tabMap"   class="tab-btn"        onclick="setPage('map')">위기 지도</button>
+  </nav>
+  <div class="hdr-spacer"></div>
+  <div class="hdr-year">
+    YEAR&nbsp;<span id="yearDisplay" class="year-num">2027</span>
+  </div>
+</header>
+
+<!-- PAGE 1: 기초 현황 -->
+<div id="pageStats" class="page">
+  <div class="stats-wrap">
+    <div class="stats-top-row">
+      <div class="stat-grid-2x2">
+        <div class="stat-card sc-danger">
+          <div class="stat-label">폐교위험</div>
+          <div id="statDanger" class="stat-num">0</div>
+          <div class="stat-sub">신입생 17명 미만</div>
+        </div>
+        <div class="stat-card sc-high">
+          <div class="stat-label">고위험</div>
+          <div id="statHigh" class="stat-num">0</div>
+          <div class="stat-sub">신입생 17~40명</div>
+        </div>
+        <div class="stat-card sc-safe">
+          <div class="stat-label">안전</div>
+          <div id="statSafe" class="stat-num">0</div>
+          <div class="stat-sub">신입생 40명 이상</div>
+        </div>
+        <div class="stat-card sc-total">
+          <div class="stat-label">서울 공립 초등학교</div>
+          <div id="statTotal" class="stat-num">565</div>
+          <div class="stat-sub">2024년 기준 전체</div>
+        </div>
+      </div>
+      <div class="chart-card hist-card">
+        <div class="chart-card-title">학교별 신입생 예측 수 분포 · <span id="histYear">2027</span>년</div>
+        <div class="chart-canvas-wrap"><canvas id="histChart"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-card trend-row">
+      <div class="chart-card-title">연도별 위험 학교 수 추이 (2027–2033)</div>
+      <div class="chart-canvas-wrap"><canvas id="trendChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 2: 위기 지도 -->
+<div id="pageMap" class="page" style="display:none">
+<!-- 3-PANEL -->
+<div class="layout">
+
+  <!-- LEFT: 학교 목록 -->
+  <aside class="sidebar">
+    <div class="search-wrap">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input id="searchInput" class="search-input" type="text" placeholder="학교 검색...">
+      </div>
+    </div>
+    <div class="filter-row">
+      <button class="filter-btn on-all"    id="f-all"    onclick="toggleFilter('all')">전체</button>
+      <button class="filter-btn"           id="f-safe"   onclick="toggleFilter('안전')">안전</button>
+      <button class="filter-btn"           id="f-high"   onclick="toggleFilter('고위험')">고위험</button>
+      <button class="filter-btn"           id="f-danger" onclick="toggleFilter('폐교위험')">폐교위험</button>
+    </div>
+    <div class="list-meta">
+      <span class="list-meta-count" id="riskCount">— 학교 위험 감지</span>
+      <div class="sort-toggle">
+        <button class="sort-btn active" id="sortDesc" onclick="setSort('desc')">높은순</button>
+        <button class="sort-btn"        id="sortAsc"  onclick="setSort('asc')">낮은순</button>
+      </div>
+    </div>
+    <div id="schoolList" class="school-list"></div>
+  </aside>
+
+  <!-- CENTER: 지도 -->
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="risk-legend">
+      <div class="legend-title">Risk Legend</div>
+      <div class="legend-row">
+        <div class="legend-icon" style="background:#22c55e">🏫</div>
+        <div class="legend-text">
+          <div class="legend-name">안전</div>
+          <div class="legend-desc">신입생 예측 최솟값 40명 이상</div>
+        </div>
+      </div>
+      <div class="legend-row">
+        <div class="legend-icon" style="background:#f97316">🏫</div>
+        <div class="legend-text">
+          <div class="legend-name">고위험</div>
+          <div class="legend-desc">신입생 예측 최솟값 17~40명</div>
+        </div>
+      </div>
+      <div class="legend-row">
+        <div class="legend-icon" style="background:#ef4444">🏫</div>
+        <div class="legend-text">
+          <div class="legend-name">폐교위험</div>
+          <div class="legend-desc">신입생 예측 최솟값 17명 미만</div>
+        </div>
+      </div>
+      <hr class="legend-divider">
+      <div class="legend-title">시설 아이콘</div>
+      <div class="legend-fac-row"><span class="legend-fac-icon">👶</span>유아 시설</div>
+      <div class="legend-fac-row"><span class="legend-fac-icon">🧒</span>청소년 시설</div>
+      <div class="legend-fac-row"><span class="legend-fac-icon">👴</span>노인 시설</div>
+      <div class="legend-fac-row"><span class="legend-fac-icon">🌏</span>다문화 시설</div>
+      <div class="legend-fac-row"><span class="legend-fac-icon">♿</span>장애인 시설</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: 상세 패널 -->
+  <aside class="detail-panel" id="detailPanel">
+    <div class="detail-empty">
+      <div class="empty-icon">🏫</div>
+      <div class="empty-text">학교를 선택하면<br>상세 지표를 확인할 수 있습니다</div>
+    </div>
+  </aside>
+
+</div>
+</div><!-- /pageMap -->
+
+<!-- BOTTOM: 타임라인 -->
+<footer class="timeline">
+  <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+  <div class="slider-wrap">
+    <input type="range" id="yearSlider" class="year-slider"
+           min="0" max="6" value="0" step="1">
+    <div class="slider-ticks">
+      <span>2027</span><span>2028</span><span>2029</span><span>2030</span>
+      <span>2031</span><span>2032</span><span>2033</span>
+    </div>
+  </div>
+  <div class="closure-stat">
+    Total Closures
+    <span id="closureNum" class="closure-num">0</span>
+    <small style="font-size:9px;">폐교위험 학교</small>
+  </div>
+</footer>
+
+<script>
+const CLUSTER_META = [{"id":0,"name":"장애인 시설 중심 수요군","schools":10,"radar":[0.418,0.578,1.484,0.251,1.808],"color":"#ef4444","desc":"장애인 시설 수요가 가장 높은 그룹. 장애인복지관 전환 우선 고려","top":"장애인"},{"id":1,"name":"노인 시설 중심 수요군","schools":7,"radar":[0.234,0.477,0.805,0.097,0.413],"color":"#f97316","desc":"노인 시설 수요가 가장 높은 그룹. 경로당·노인복지센터 전환 적합","top":"노인"},{"id":2,"name":"청소년 시설 중심 수요군","schools":2,"radar":[2.155,3.621,0.526,0.245,2.544],"color":"#3b82f6","desc":"청소년 시설 수요가 가장 높은 그룹. 청소년센터·방과후 시설 전환 적합","top":"장애인"}];
+const SCHOOL_CLUSTER = {"B000001983":0,"B000001896":0,"B000002325":0,"B000001953":1,"B000002369":2,"B000002085":1,"B000002362":0,"B000001893":0,"B000002104":1,"B000002299":0,"B000002112":1,"B000002114":0,"B000002093":1,"B000001884":2,"B000001990":1,"B000002046":1,"B000001862":0,"B000002005":0,"B000002202":0};
+const RAW = {"schools":[["B000002074","서울중현초등학교","안전",null,null,null,null,"서울중현초통학구역",44.8,2032,[75.4,58.8,68.7,57.7,49.2,44.8,60.8]],["B000002266","서울방현초등학교","고위험",null,2026,37.476306,126.990309,"서울방현초통학구역",34.4,2032,[42.3,44.5,40.4,40.3,34.7,34.4,36.2]],["B000001946","서울염리초등학교","안전",null,null,null,null,"서울염리초통학구역",143.8,2031,[216.0,191.6,171.9,161.9,143.8,145.4,157.0]],["B000002175","서울고일초등학교","안전",null,null,null,null,"서울고일초통학구역",118.1,2033,[278.9,215.5,200.5,182.6,156.7,146.6,118.1]],["B000002012","서울우신초등학교","안전",null,null,null,null,"서울우신초통학구역",44.9,2028,[54.3,44.9,54.4,63.1,60.8,55.9,67.5]],["B000002271","서울양재초등학교","고위험",null,2026,37.474168,127.031858,"서울양재초통학구역",30.7,2030,[34.2,32.4,32.3,30.7,31.1,32.6,33.5]],["B000002172","서울위례초등학교","폐교위험",2026,null,37.522384,127.139418,"서울위례초통학구역",1.1,2031,[1.9,1.5,1.6,1.3,1.1,1.2,1.2]],["B000027451","서울양원숲초등학교","안전",null,null,null,null,"서울양원숲초통학구역",118.5,2028,[161.3,118.5,136.7,144.6,146.4,148.1,136.0]],["B000026183","서울항동초등학교","안전",null,null,null,null,"서울항동초통학구역",80.2,2033,[202.9,165.1,156.8,151.3,102.4,114.4,80.2]],["B000025614","서울하늘숲초등학교","폐교위험",2027,2026,37.484317,126.841677,"서울하늘숲초통학구역",27.2,2031,[34.5,30.2,33.0,28.2,27.2,31.1,28.0]],["B000001904","서울응암초등학교","안전",null,null,null,null,"서울응암초통학구역",160.4,2031,[200.3,201.3,167.0,193.0,160.4,174.7,169.8]],["B000002301","서울일원초등학교","안전",null,null,null,null,"서울일원초통학구역",137.3,2030,[170.0,156.5,142.8,137.3,140.9,165.2,209.0]],["B000002170","서울천동초등학교","안전",null,null,null,null,"서울천동초통학구역",132.1,2027,[132.1,142.3,163.9,176.0,175.2,201.8,222.3]],["B000002389","서울돈암초등학교","안전",null,null,null,null,"서울돈암초통학구역",121.7,2031,[150.1,145.5,144.9,133.9,121.7,130.9,146.3]],["B000001983","서울정심초등학교","폐교위험",2031,2026,37.471679,126.908409,"서울정심초통학구역",16.3,2031,[27.9,19.3,24.5,21.4,16.3,17.0,18.5]],["B000002237","서울등촌초등학교","안전",null,null,null,null,"서울등촌초통학구역",108.1,2028,[117.0,108.1,125.3,113.6,115.2,127.7,133.4]],["B000002030","서울월천초등학교","안전",null,null,null,null,"서울월천초통학구역",43.8,2030,[52.6,43.9,55.7,43.8,50.4,46.3,52.0]],["B000022754","서울세명초등학교","안전",null,null,null,null,"서울세명초통학구역",61.9,2030,[88.4,76.4,64.4,61.9,66.0,65.3,76.2]],["B000001843","서울이문초등학교","안전",null,null,null,null,"서울이문초통학구역",89.8,2031,[117.2,105.2,98.6,110.1,89.8,103.7,115.4]],["B000002181","서울천일초등학교","안전",null,null,null,null,"서울천일초통학구역",60.0,2027,[60.0,67.0,75.6,79.0,78.3,85.5,106.6]],["B000002163","서울묘곡초등학교","안전",null,null,null,null,"서울묘곡초통학구역",59.2,2032,[152.3,117.6,107.8,72.8,68.7,59.2,61.2]],["B000002060","서울상천초등학교","안전",null,null,null,null,"서울상천초통학구역",41.9,2029,[50.8,43.4,41.9,47.9,47.4,51.8,66.3]],["B000002201","서울정목초등학교","안전",null,null,null,null,"서울정목초통학구역",69.4,2032,[115.1,88.5,74.3,81.2,71.9,69.4,79.0]],["B000002183","서울강동초등학교","안전",null,null,null,null,"서울강동초통학구역",91.4,2031,[96.3,100.1,101.6,105.5,91.4,118.0,133.0]],["B000002352","서울금호초등학교","안전",null,null,null,null,"서울금호초통학구역",173.4,2031,[198.0,186.7,208.1,184.5,173.4,180.2,266.4]],["B000002033","서울창동초등학교","안전",null,null,null,null,"서울창동초통학구역",58.0,2031,[78.3,61.4,75.0,62.9,58.0,64.6,74.3]],["B000002165","서울고덕초등학교","안전",null,null,null,null,"서울고덕초통학구역",139.3,2031,[226.3,201.5,184.8,162.5,139.3,155.4,163.8]],["B000002086","서울교동초등학교","폐교위험",2026,null,37.575006,126.988151,"서울교동초통학구역",18.8,2027,[18.8,24.8,23.1,27.1,19.0,27.7,33.8]],["B000002173","서울명원초등학교","안전",null,null,null,null,"서울명원초통학구역",83.9,2031,[135.7,130.6,115.1,104.5,83.9,97.7,90.0]],["B000002378","서울성자초등학교","안전",null,null,null,null,"서울성자초통학구역",68.5,2028,[77.8,68.5,86.4,81.2,95.0,101.2,95.7]],["B000002032","서울가인초등학교","안전",null,null,null,null,"서울가인초통학구역",73.2,2031,[100.4,81.9,88.0,85.5,73.2,73.7,80.8]],["B000002051","서울공연초등학교","안전",null,null,null,null,"서울공연초통학구역",77.1,2031,[103.0,94.3,81.1,89.8,77.1,83.5,91.4]],["B000001882","서울신도초등학교","안전",null,null,null,null,"서울신도초통학구역",42.4,2033,[79.9,71.3,68.7,56.3,51.3,46.1,42.4]],["B000024205","서울강솔초등학교","안전",null,null,null,null,"서울강솔초통학구역",63.6,2033,[135.1,150.5,133.3,104.3,72.8,67.9,63.6]],["B000001896","서울연광초등학교","폐교위험",2027,2026,37.624291,126.924421,"서울연광초통학구역",12.1,2030,[13.2,16.5,15.1,12.1,13.4,15.5,16.5]],["B000024775","서울금나래초등학교","안전",null,null,null,null,"서울금나래초통학구역",134.0,2027,[134.0,138.6,144.4,142.9,141.3,141.3,170.9]],["B000002220","서울등마초등학교","안전",null,null,null,null,"서울등마초통학구역",120.1,2028,[130.8,120.1,135.4,125.5,124.3,134.5,143.7]],["B000024102","서울어울초등학교","안전",null,null,null,null,"서울어울초통학구역",71.4,2032,[83.7,88.9,88.9,97.6,75.6,71.4,88.6]],["B000002180","서울명일초등학교","안전",null,null,null,null,"서울명일초통학구역",97.4,2031,[154.9,148.8,142.7,118.9,97.4,116.9,109.6]],["B000002083","서울청운초등학교","고위험",null,2026,37.585965,126.969299,"서울청운초통학구역",22.6,2031,[29.4,26.6,25.0,23.8,22.6,23.8,23.2]],["B000001943","서울아현초등학교","안전",null,null,null,null,"서울아현초통학구역",169.6,2031,[193.3,186.4,193.6,186.1,169.6,188.4,206.5]],["B000002195","서울신기초등학교","안전",null,null,null,null,"서울신기초통학구역",45.1,2031,[61.8,61.6,57.0,49.3,45.1,51.4,51.4]],["B000001925","서울고은초등학교","안전",null,null,null,null,"서울고은초통학구역",74.2,2029,[85.7,84.4,74.2,81.3,80.6,82.6,95.7]],["B000024506","서울우솔초등학교","안전",null,null,null,null,"서울우솔초통학구역",54.2,2030,[63.8,58.9,59.1,54.2,58.6,59.7,57.6]],["B000002307","서울노량진초등학교","안전",null,null,null,null,"서울노량진초통학구역",57.2,2031,[64.3,65.4,75.5,69.3,57.2,72.8,81.8]],["B000002116","서울한강초등학교","안전",null,null,null,null,"서울한강초통학구역",84.2,2026,[84.2,99.1,96.6,111.0,103.4,112.6,121.2]],["B000002403","서울석관초등학교","안전",null,null,null,null,"서울석관초통학구역",90.0,2031,[94.0,91.7,94.3,99.5,90.0,117.4,118.1]],["B000002197","서울양목초등학교","고위험",null,2028,37.523767,126.861698,"서울양목초통학구역",30.9,2031,[44.1,38.3,43.3,33.2,30.9,35.1,43.0]],["B000002001","서울영등포초등학교","안전",null,null,null,null,"서울영등포초통학구역",100.9,2028,[119.9,100.9,113.0,142.2,136.0,123.6,180.7]],["B000002182","서울천호초등학교","안전",null,null,null,null,"서울천호초통학구역",131.6,2031,[131.7,146.3,167.8,148.4,131.6,139.3,171.2]],["B000002002","서울영문초등학교","안전",null,null,null,null,"서울영문초통학구역",174.7,2030,[192.4,183.2,194.1,174.7,178.5,185.4,224.1]],["B000001960","서울매봉초등학교","안전",null,null,null,null,"서울매봉초통학구역",43.8,2027,[43.8,51.1,51.3,52.7,48.8,56.1,62.9]],["B000002084","서울매동초등학교","고위험",null,2026,37.577538,126.966844,"서울매동초통학구역",19.4,2033,[36.3,26.8,32.7,27.3,26.0,24.4,19.4]],["B000002288","서울개원초등학교","안전",null,null,null,null,"서울개원초통학구역",138.3,2032,[220.5,173.2,151.0,158.6,143.5,138.3,156.9]],["B000001978","서울영남초등학교","고위험",null,2028,37.475439,126.909888,"서울영남초통학구역",30.6,2031,[46.4,32.8,47.3,33.6,30.6,38.9,39.5]],["B000001886","서울갈현초등학교","고위험",null,2027,37.619374,126.916384,"서울갈현초통학구역",57.8,2031,[78.6,71.7,70.8,60.0,57.8,59.0,73.6]],["B000002385","서울구의초등학교","안전",null,null,null,null,"서울구의초통학구역",98.8,2029,[105.6,110.0,98.8,107.3,111.6,114.0,128.5]],["B000002249","서울등원초등학교","고위험",null,2026,37.560642,126.849981,"서울등원초통학구역",51.2,2031,[61.0,57.1,67.6,60.7,51.2,57.5,71.3]],["B000002347","서울행당초등학교","안전",null,null,null,null,"서울행당초통학구역",159.6,2031,[177.5,175.2,194.6,188.7,159.6,177.4,195.4]],["B000002064","서울수락초등학교","안전",null,null,null,null,"서울수락초통학구역",47.8,2031,[64.0,48.3,50.8,55.2,47.8,49.8,61.5]],["B000002339","서울당곡초등학교","안전",null,null,null,null,"서울당곡초통학구역",82.4,2029,[101.1,104.3,82.4,91.5,87.5,91.7,94.1]],["B000002325","서울원신초등학교","폐교위험",2026,null,37.467154,126.92708,"서울원신초통학구역",5.6,2030,[7.0,7.7,6.9,5.6,7.0,6.4,9.6]],["B000001953","서울영일초등학교","폐교위험",2026,2033,37.485457,126.88383,"서울영일초통학구역",12.5,2026,[12.6,13.1,13.6,13.5,12.5,14.8,19.2]],["B000002369","서울광장초등학교","폐교위험",2031,2026,37.548642,127.101041,"서울광장초통학구역",11.5,2033,[36.1,22.8,19.6,17.3,14.1,13.2,11.5]],["B000002160","서울둔촌초등학교","고위험",null,2026,37.526217,127.137466,"서울둔촌초통학구역",62.9,2030,[77.1,78.3,75.7,67.8,62.9,73.0,84.0]],["B000001869","서울중랑초등학교","안전",null,null,null,null,"서울중랑초통학구역",66.7,2029,[81.8,76.3,66.7,74.7,78.0,81.2,102.1]],["B000002179","서울성내초등학교","안전",null,null,null,null,"서울성내초통학구역",141.0,2028,[156.4,141.0,149.0,163.9,160.2,172.8,192.8]],["B000001921","서울창서초등학교","안전",null,null,null,null,"서울창서초통학구역",42.8,2030,[50.6,48.8,45.0,42.8,43.4,52.7,51.8]],["B000001935","서울망원초등학교","고위험",null,2028,37.560845,126.900958,"서울망원초통학구역",32.0,2029,[44.7,39.4,32.0,35.4,36.9,40.1,47.8]],["B000025891","서울언남초등학교","안전",null,null,null,null,"서울언남초통학구역",71.8,2033,[88.9,97.0,104.5,92.8,88.2,95.3,71.8]],["B000001901","서울역촌초등학교","안전",null,null,null,null,"서울역촌초통학구역",96.4,2030,[117.8,101.0,106.2,96.4,99.7,108.4,121.1]],["B000025384","서울강빛초등학교","안전",null,null,null,null,"서울강빛초통학구역",115.0,2033,[229.4,232.5,185.8,166.1,143.3,126.7,115.0]],["B000001903","서울연은초등학교","안전",null,null,null,null,"서울연은초통학구역",139.6,2031,[175.8,175.0,151.1,172.0,139.6,155.5,150.6]],["B000001974","서울오정초등학교","고위험",null,2033,37.489369,126.826215,"서울오정초통학구역",39.9,2033,[61.3,53.9,54.9,49.2,41.8,48.4,39.9]],["B000002174","서울대명초등학교","안전",null,null,null,null,"서울대명초통학구역",119.6,2033,[191.4,166.4,154.6,143.2,120.5,132.6,119.6]],["B000001902","서울은명초등학교","안전",null,null,null,null,"서울은명초통학구역",141.8,2031,[165.2,160.2,150.2,169.0,141.8,151.1,154.7]],["B000001892","서울대조초등학교","안전",null,null,null,null,"서울대조초통학구역",71.6,2030,[81.9,73.2,72.2,71.6,74.9,90.5,114.7]],["B000002185","서울신암초등학교","안전",null,null,null,null,"서울신암초통학구역",102.7,2029,[115.4,103.0,102.7,115.0,111.5,147.5,170.9]],["B000002168","서울신명초등학교","안전",null,null,null,null,"서울신명초통학구역",109.2,2028,[122.0,109.2,131.8,128.8,118.1,143.0,137.3]],["B000001891","서울수리초등학교","고위험",null,2027,37.6203,126.934071,"서울수리초통학구역",32.6,2029,[37.7,42.3,32.6,45.0,33.0,34.3,42.6]],["B000002059","서울당현초등학교","안전",null,null,null,null,"서울당현초통학구역",44.8,2029,[55.2,47.6,44.8,52.8,52.1,58.0,74.1]],["B000002331","서울삼성초등학교","고위험",null,2026,37.467926,126.941164,"서울삼성초통학구역",25.5,2030,[36.4,36.2,39.5,25.5,37.4,39.3,43.0]],["B000001890","서울녹번초등학교","안전",null,null,null,null,"서울녹번초통학구역",103.7,2031,[113.9,111.2,115.4,119.4,103.7,107.8,127.7]],["B000002359","서울성수초등학교","안전",null,null,null,null,"서울성수초통학구역",87.4,2027,[87.4,101.2,96.2,96.3,87.4,111.1,120.1]],["B000002097","서울덕수초등학교","안전",null,null,null,null,"서울덕수초통학구역",41.1,2033,[64.8,48.8,56.3,49.5,43.6,43.3,41.1]],["B000001918","서울대신초등학교","안전",null,null,null,null,"서울대신초통학구역",94.5,2027,[94.5,95.1,97.5,108.3,97.8,103.6,114.4]],["B000002305","서울신상도초등학교","안전",null,null,null,null,"서울신상도초통학구역",197.5,2031,[252.5,220.0,208.1,204.8,197.5,212.5,251.6]],["B000002171","서울한산초등학교","안전",null,null,null,null,"서울한산초통학구역",73.2,2030,[74.7,79.4,89.1,73.2,78.4,86.8,96.0]],["B000002056","서울계상초등학교","안전",null,null,null,null,"서울계상초통학구역",81.4,2029,[96.6,105.5,81.4,95.7,89.4,93.7,106.0]],["B000002428","서울인수초등학교","안전",null,null,null,null,"서울인수초통학구역",50.2,2033,[83.3,71.3,69.6,54.2,54.8,60.7,50.2]],["B000002050","서울태릉초등학교","안전",null,null,null,null,"서울태릉초통학구역",185.7,2031,[242.7,203.4,198.9,211.2,185.7,197.5,197.3]],["B000001839","서울동답초등학교","안전",null,null,null,null,"서울동답초통학구역",107.4,2030,[133.4,121.8,116.6,107.4,109.2,110.0,112.1]],["B000002042","서울덕암초등학교","안전",null,null,null,null,"서울덕암초통학구역",52.9,2033,[87.8,93.4,63.3,59.2,63.6,54.8,52.9]],["B000001967","서울영서초등학교","안전",null,null,null,null,"서울영서초통학구역",73.5,2029,[93.0,77.1,73.5,95.6,93.2,91.8,132.0]],["B000001855","서울휘봉초등학교","안전",null,null,null,null,"서울휘봉초통학구역",82.1,2029,[96.5,94.1,82.1,94.9,107.9,104.0,122.7]],["B000001848","서울전동초등학교","안전",null,null,null,null,"서울전동초통학구역",68.2,2030,[87.2,74.6,72.1,68.2,86.5,76.5,85.3]],["B000002329","서울조원초등학교","고위험",null,2026,37.484244,126.909606,"서울조원초통학구역",35.1,2026,[42.8,35.1,42.7,46.4,49.6,74.8,98.2]],["B000002161","서울선린초등학교","안전",null,null,null,null,"서울선린초통학구역",75.2,2027,[75.2,80.4,95.9,78.9,87.4,96.2,104.1]],["B000002146","서울방산초등학교","안전",null,null,null,null,"서울방산초통학구역",60.2,2031,[103.6,75.0,75.4,71.6,60.2,61.8,83.4]],["B000001961","서울개봉초등학교","안전",null,null,null,null,"서울개봉초통학구역",210.6,2030,[223.3,212.5,223.7,210.6,225.2,228.7,258.1]],["B000002184","서울선사초등학교","안전",null,null,null,null,"서울선사초통학구역",65.8,2031,[85.5,75.7,73.0,72.2,65.8,88.7,94.3]],["B000002375","서울동자초등학교","안전",null,null,null,null,"서울동자초통학구역",107.2,2031,[160.3,132.6,140.4,117.0,107.2,128.1,128.6]],["B000002176","서울상일초등학교","고위험",null,2026,37.547223,127.172145,"서울상일초통학구역",18.3,2033,[42.2,36.7,33.8,29.1,23.2,21.8,18.3]],["B000002085","서울재동초등학교","폐교위험",2027,2026,37.579935,126.985572,"서울재동초통학구역",7.2,2028,[9.6,7.2,11.4,10.3,10.1,7.9,7.3]],["B000001933","서울마포초등학교","안전",null,null,null,null,"서울마포초통학구역",150.7,2031,[174.5,192.3,198.1,168.2,150.7,155.9,219.5]],["B000002178","서울성일초등학교","안전",null,null,null,null,"서울성일초통학구역",145.8,2031,[156.2,150.2,148.1,154.4,145.8,161.9,186.2]],["B000002362","서울용답초등학교","폐교위험",2026,2033,37.560707,127.053711,"서울용답초통학구역",10.3,2026,[13.1,13.3,10.3,10.6,11.2,16.9,23.4]],["B000002225","서울치현초등학교","안전",null,null,null,null,"서울치현초통학구역",52.2,2029,[58.2,57.6,52.2,66.7,68.7,69.3,84.6]],["B000001941","서울중동초등학교","안전",null,null,null,null,"서울중동초통학구역",51.2,2031,[64.9,54.7,55.3,54.0,51.2,67.8,76.9]],["B000002196","서울남명초등학교","안전",null,null,null,null,"서울남명초통학구역",68.8,2031,[92.8,91.3,85.1,75.8,68.8,78.8,77.8]],["B000002009","서울문래초등학교","안전",null,null,null,null,"서울문래초통학구역",127.4,2030,[138.2,130.4,134.1,127.4,130.0,138.2,149.9]],["B000001838","서울휘경초등학교","안전",null,null,null,null,"서울휘경초통학구역",41.6,2029,[45.1,45.5,41.6,50.9,59.0,54.4,67.8]],["B000002340","서울신봉초등학교","안전",null,null,null,null,"서울신봉초통학구역",47.2,2031,[62.2,59.9,60.4,57.1,47.2,59.5,65.8]],["B000001888","서울구산초등학교","안전",null,null,null,null,"서울구산초통학구역",59.6,2031,[95.6,81.7,84.4,89.9,59.6,64.2,82.9]],["B000001955","서울고원초등학교","안전",null,null,null,null,"서울고원초통학구역",106.3,2027,[106.3,122.0,123.5,129.9,127.2,142.4,163.8]],["B000002132","서울잠신초등학교","안전",null,null,null,null,"서울잠신초통학구역",78.2,2031,[170.7,144.9,135.7,99.3,78.2,80.3,82.3]],["B000002236","서울내발산초등학교","안전",null,null,null,null,"서울내발산초통학구역",59.2,2031,[114.9,83.0,93.5,79.3,59.2,60.5,65.6]],["B000002229","서울발산초등학교","안전",null,null,null,null,"서울발산초통학구역",80.1,2031,[108.3,101.6,91.5,92.8,80.1,85.4,81.2]],["B000002125","서울평화초등학교","안전",null,null,null,null,"서울평화초통학구역",43.6,2031,[53.4,52.9,53.0,51.6,43.6,55.3,54.8]],["B000002063","서울노일초등학교","안전",null,null,null,null,"서울노일초통학구역",58.5,2028,[73.8,58.5,60.8,67.8,60.9,66.5,84.4]],["B000002206","서울양강초등학교","안전",null,null,null,null,"서울양강초통학구역",68.6,2031,[90.2,82.0,77.6,77.4,68.6,79.3,77.1]],["B000002162","서울고명초등학교","안전",null,null,null,null,"서울고명초통학구역",121.6,2031,[167.8,171.8,165.6,145.5,121.6,137.3,129.0]],["B000002320","서울상도초등학교","안전",null,null,null,null,"서울상도초통학구역",135.2,2031,[171.9,181.6,145.8,140.1,135.2,151.4,175.6]],["B000002252","서울우면초등학교","고위험",null,2030,37.464623,127.023692,"서울우면초통학구역",38.2,2030,[45.0,41.5,41.7,38.2,41.3,42.0,40.6]],["B000002218","서울신정초등학교","안전",null,null,null,null,"서울신정초통학구역",121.6,2031,[178.4,173.1,139.3,138.5,121.6,133.6,156.2]],["B000002222","서울염경초등학교","안전",null,null,null,null,"서울염경초통학구역",128.4,2030,[149.2,142.1,139.6,128.4,150.0,164.3,176.6]],["B000002269","서울서일초등학교","안전",null,null,null,null,"서울서일초통학구역",96.8,2031,[131.4,113.4,124.0,121.2,96.8,98.3,100.5]],["B000002223","서울염창초등학교","안전",null,null,null,null,"서울염창초통학구역",139.6,2030,[158.4,149.9,147.6,139.6,154.4,171.4,182.2]],["B000002392","서울안암초등학교","고위험",null,2031,37.58752,127.022436,"서울안암초통학구역",37.2,2031,[65.0,46.0,55.8,46.9,37.2,46.6,57.4]],["B000025375","서울위례별초등학교","안전",null,null,null,null,"서울위례별초통학구역",94.2,2032,[209.9,203.9,197.8,119.4,103.6,94.2,104.8]],["B000001851","서울홍파초등학교","안전",null,null,null,null,"서울홍파초통학구역",42.3,2029,[47.0,53.7,42.3,53.7,42.9,47.7,53.2]],["B000002208","서울강월초등학교","안전",null,null,null,null,"서울강월초통학구역",56.2,2028,[61.1,56.2,64.2,75.4,68.7,63.4,72.1]],["B000001853","서울홍릉초등학교","고위험",null,2027,37.591088,127.047202,"서울홍릉초통학구역",62.5,2029,[71.8,76.9,62.5,76.5,71.8,66.5,71.0]],["B000001893","서울연신초등학교","폐교위험",2030,2026,37.626722,126.92851,"서울연신초통학구역",16.9,2030,[20.3,24.5,22.7,16.9,19.8,22.5,24.2]],["B000002364","서울무학초등학교","안전",null,null,null,null,"서울무학초통학구역",147.9,2031,[151.2,149.8,150.9,148.1,147.9,154.1,193.6]],["B000002286","서울개일초등학교","안전",null,null,null,null,"서울개일초통학구역",104.1,2031,[175.3,149.6,123.1,119.9,104.1,107.0,122.9]],["B000002350","서울경수초등학교","안전",null,null,null,null,"서울경수초통학구역",75.6,2029,[86.0,89.4,75.6,77.9,81.1,105.7,110.7]],["B000001919","서울북가좌초등학교","안전",null,null,null,null,"서울북가좌초통학구역",162.7,2031,[226.1,231.8,210.9,203.1,162.7,200.5,192.9]],["B000002421","서울삼각산초등학교","안전",null,null,null,null,"서울미양초서울삼각산초공동통학구역",86.7,2033,[109.1,119.8,104.9,99.8,93.1,89.0,86.7]],["B000002247","서울등명초등학교","고위험",null,2026,37.56092,126.842361,"서울등명초서울등양초서울등현초공동통학구역",29.8,2028,[36.1,29.8,35.0,34.7,30.4,32.4,40.7]],["B000002022","서울오봉초등학교","고위험",null,2026,37.671797,127.04043,"서울오봉초통학구역",22.3,2031,[30.4,32.2,27.4,25.3,22.3,22.7,23.4]],["B000002267","서울서초초등학교","고위험",null,2033,37.499557,127.023907,"서울서초초통학구역",78.5,2033,[161.5,133.1,126.0,103.6,84.9,86.1,78.5]],["B000002104","서울충무초등학교","폐교위험",2026,2030,37.561829,127.001883,"서울충무초통학구역",14.6,2026,[14.6,15.6,16.9,17.7,18.0,27.7,24.2]],["B000001881","서울은빛초등학교","폐교위험",2033,2026,37.64262,126.919145,"서울진관초통학구역",40.9,2033,[77.1,68.7,66.2,54.3,49.5,44.4,40.9]],["B000002010","서울영신초등학교","안전",null,null,null,null,"서울영신초통학구역",118.7,2028,[156.3,118.7,130.3,153.7,138.3,136.1,162.8]],["B000001922","서울홍연초등학교","고위험",null,2026,37.581962,126.930813,"서울홍연초통학구역",51.7,2031,[70.6,69.5,58.4,54.8,51.7,58.1,58.0]],["B000002280","서울양전초등학교","안전",null,null,null,null,"서울양전초통학구역",42.0,2031,[46.4,47.7,46.3,43.9,42.0,52.8,55.8]],["B000002147","서울삼전초등학교","안전",null,null,null,null,"서울삼전초통학구역",77.0,2031,[83.6,89.2,94.7,87.3,77.0,95.8,109.0]],["B000002394","서울숭덕초등학교","안전",null,null,null,null,"서울숭덕초통학구역",185.8,2032,[277.9,252.7,257.6,218.0,220.1,185.8,214.7]],["B000002355","서울동명초등학교","고위험",null,2029,37.568873,127.035584,"서울동명초통학구역",31.1,2031,[41.2,41.3,38.5,38.5,31.1,42.2,39.6]],["B000025289","서울송례초등학교","안전",null,null,null,null,"서울송례초통학구역",90.4,2032,[201.4,195.6,189.8,114.5,99.4,90.4,100.6]],["B000001936","서울서강초등학교","안전",null,null,null,null,"서울서강초통학구역",133.2,2031,[188.0,189.7,179.6,154.6,133.2,137.7,167.0]],["B000002297","서울도성초등학교","안전",null,null,null,null,"서울도성초통학구역",51.6,2032,[125.8,78.9,73.4,55.7,54.8,51.6,67.3]],["B000002177","서울강명초등학교","안전",null,null,null,null,"서울강명초통학구역",92.8,2033,[181.8,178.9,158.7,132.7,103.5,99.6,92.8]],["B000002357","서울사근초등학교","폐교위험",2026,null,37.562984,127.047737,"서울사근초통학구역",29.6,2027,[29.6,42.0,38.9,43.4,30.0,41.8,42.4]],["B000002029","서울백운초등학교","안전",null,null,null,null,"서울백운초통학구역",45.0,2031,[64.9,58.6,54.6,51.1,45.0,50.1,49.4]],["B000002393","서울동신초등학교","고위험",null,2031,37.5827,127.016733,"서울동신초통학구역",79.4,2031,[99.8,92.4,93.6,81.5,79.4,104.0,119.9]],["B000002351","서울금북초등학교","안전",null,null,null,null,"서울금북초통학구역",225.1,2031,[267.7,247.7,259.2,260.6,225.1,265.1,303.6]],["B000001957","서울개웅초등학교","안전",null,null,null,null,"서울개웅초통학구역",51.3,2030,[66.7,55.6,58.8,51.3,58.4,62.1,64.2]],["B000001959","서울온수초등학교","안전",null,null,null,null,"서울온수초통학구역",70.5,2027,[70.5,94.4,85.2,76.5,72.6,100.1,81.2]],["B000002126","서울중대초등학교","안전",null,null,null,null,"서울중대초통학구역",103.0,2031,[154.7,122.1,119.8,105.1,103.0,128.3,123.1]],["B000002399","서울길음초등학교","안전",null,null,null,null,"서울길음초통학구역",74.6,2032,[109.8,112.9,95.9,88.4,80.8,74.6,75.2]],["B000001895","서울연천초등학교","고위험",null,2026,37.620776,126.929486,"서울연천초통학구역",23.0,2031,[23.9,28.8,24.2,25.6,23.0,25.6,28.8]],["B000002076","서울상경초등학교","안전",null,null,null,null,"서울상경초통학구역",129.9,2029,[131.8,138.0,129.9,158.2,160.3,195.9,263.9]],["B000002133","서울송전초등학교","안전",null,null,null,null,"서울송전초통학구역",89.8,2031,[130.8,124.5,122.9,103.4,89.8,99.3,116.3]],["B000002092","서울창신초등학교","안전",null,null,null,null,"서울창신초통학구역",85.0,2027,[87.2,85.0,92.0,96.4,85.6,122.5,133.1]],["B000002276","서울대왕초등학교","고위험",null,2026,37.464609,127.10562,"서울대왕초통학구역",27.5,2030,[39.2,33.9,28.6,27.5,29.3,29.0,33.8]],["B000002299","서울대청초등학교","폐교위험",2029,2026,37.493155,127.087808,"서울대청초통학구역",14.5,2029,[19.1,20.8,14.5,19.3,19.9,23.6,22.0]],["B000002007","서울신대림초등학교","안전",null,null,null,null,"서울신대림초통학구역",49.8,2026,[52.2,61.2,49.8,55.1,56.1,67.9,67.1]],["B000002356","서울마장초등학교","안전",null,null,null,null,"서울마장초통학구역",57.4,2031,[62.8,78.8,73.6,78.5,57.4,82.9,84.8]],["B000002322","서울문창초등학교","안전",null,null,null,null,"서울문창초통학구역",52.9,2029,[63.1,59.9,52.9,58.2,57.3,61.4,69.6]],["B000002028","서울쌍문초등학교","안전",null,null,null,null,"서울쌍문초통학구역",64.2,2031,[104.7,102.9,86.9,79.8,64.2,80.3,82.4]],["B000001879","서울중흥초등학교","안전",null,null,null,null,"서울중흥초통학구역",67.3,2029,[68.9,69.4,67.3,74.4,68.6,69.6,89.8]],["B000002167","서울명덕초등학교","안전",null,null,null,null,"서울명덕초통학구역",106.2,2033,[221.8,185.6,172.2,125.9,121.8,113.0,106.2]],["B000002211","서울지향초등학교","안전",null,null,null,null,"서울지향초통학구역",70.1,2031,[87.0,83.9,83.0,76.7,70.1,75.8,77.7]],["B000001992","서울시흥초등학교","고위험",null,2028,37.455098,126.904976,"서울시흥초통학구역",35.7,2031,[48.4,37.5,39.0,41.2,35.7,38.2,43.5]],["B000002217","서울우장초등학교","안전",null,null,null,null,"서울우장초통학구역",108.0,2031,[200.2,161.4,179.3,145.5,108.0,121.5,138.0]],["B000002420","서울삼양초등학교","안전",null,null,null,null,"서울삼양초통학구역",82.2,2033,[86.4,83.2,85.5,82.9,92.2,85.8,82.2]],["B000002238","서울백석초등학교","안전",null,null,null,null,"서울백석초통학구역",130.6,2026,[130.6,139.2,131.3,162.5,157.4,192.2,231.8]],["B000002041","서울녹천초등학교","안전",null,null,null,null,"서울녹천초통학구역",40.1,2030,[44.6,41.4,48.0,40.1,46.3,46.7,61.2]],["B000002429","서울우이초등학교","안전",null,null,null,null,"서울우이초통학구역",59.2,2033,[105.7,93.1,82.8,63.1,62.8,69.7,59.2]],["B000002187","서울목원초등학교","고위험",null,2028,37.542943,126.882455,"서울목원초통학구역",20.4,2031,[49.2,36.9,33.0,29.5,20.4,27.1,21.8]],["B000002258","서울반원초등학교","안전",null,null,null,null,"서울반원초통학구역",138.2,2033,[224.0,185.0,175.7,164.6,151.9,151.8,138.2]],["B000002244","서울월정초등학교","안전",null,null,null,null,"서울월정초통학구역",76.5,2031,[112.1,95.2,82.4,89.9,76.5,88.8,111.6]],["B000002034","서울창원초등학교","안전",null,null,null,null,"서울창원초통학구역",45.6,2031,[63.1,45.8,57.9,47.2,45.6,52.1,59.8]],["B000001916","서울북성초등학교","안전",null,null,null,null,"서울북성초통학구역",194.2,2031,[199.1,208.6,219.3,227.1,194.2,210.0,233.0]],["B000001938","서울서교초등학교","고위험",null,2029,37.555066,126.925098,"서울서교초통학구역",30.2,2031,[43.3,40.2,38.9,32.6,30.2,35.4,37.4]],["B000002349","서울경동초등학교","안전",null,null,null,null,"서울경동초통학구역",80.4,2027,[80.4,85.5,94.2,95.7,93.5,113.6,127.6]],["B000001969","서울구로초등학교","고위험",null,2026,37.49727,126.885987,"서울구로초통학구역",21.4,2026,[21.4,24.7,22.5,23.7,21.8,24.9,24.8]],["B000002191","서울계남초등학교","안전",null,null,null,null,"서울계남초통학구역",65.3,2031,[113.7,106.1,90.8,69.3,65.3,74.0,68.1]],["B000001956","서울고산초등학교","안전",null,null,null,null,"서울고산초통학구역",45.2,2029,[48.0,45.8,45.2,46.8,49.2,58.0,67.6]],["B000002111","서울후암초등학교","고위험",null,2026,37.55129,126.982373,"서울후암초통학구역",24.5,2032,[38.9,33.5,33.7,36.5,32.3,24.5,40.7]],["B000001846","서울안평초등학교","안전",null,null,null,null,"서울안평초통학구역",138.8,2033,[198.6,189.4,181.5,160.7,150.5,153.4,138.8]],["B000002062","서울노원초등학교","고위험",null,2026,37.673278,127.058426,"서울노원초통학구역",25.0,2031,[32.6,25.7,26.2,28.6,25.0,26.1,33.3]],["B000002216","서울화일초등학교","안전",null,null,null,null,"서울화일초통학구역",45.1,2031,[77.7,67.0,62.0,52.9,45.1,56.5,73.6]],["B000002054","서울신상계초등학교","안전",null,null,null,null,"서울신상계초통학구역",51.2,2032,[74.1,82.1,56.2,55.0,59.0,51.2,52.2]],["B000001934","서울동교초등학교","안전",null,null,null,null,"서울동교초통학구역",66.4,2031,[80.6,68.6,71.6,68.4,66.4,74.6,85.6]],["B000001877","서울봉화초등학교","고위험",null,2026,37.61361,127.092401,"서울봉화초통학구역",52.5,2028,[66.3,52.5,53.5,55.9,55.5,63.8,71.0]],["B000002405","서울장위초등학교","안전",null,null,null,null,"서울장위초통학구역",85.1,2031,[89.0,90.1,86.5,93.1,85.1,114.5,113.9]],["B000002348","서울동호초등학교","안전",null,null,null,null,"서울동호초통학구역",138.6,2031,[143.2,144.0,150.4,151.5,138.6,158.3,175.5]],["B000002100","서울장충초등학교","고위험",null,2026,37.559922,127.011309,"서울장충초통학구역",28.2,2032,[36.3,34.0,32.4,29.8,30.5,28.2,41.2]],["B000002250","서울수명초등학교","안전",null,null,null,null,"서울수명초통학구역",69.0,2033,[94.0,85.0,93.5,83.6,72.8,83.1,69.0]],["B000002317","서울영본초등학교","안전",null,null,null,null,"서울영본초통학구역",107.2,2030,[118.0,109.8,135.7,107.2,114.2,131.2,150.4]],["B000002164","서울강일초등학교","안전",null,null,null,null,"서울강일초통학구역",54.1,2033,[107.9,109.3,87.3,78.1,67.4,59.6,54.1]],["B000002296","서울압구정초등학교","안전",null,null,null,null,"서울압구정초통학구역",60.2,2033,[94.1,87.5,82.3,72.1,61.3,66.9,60.2]],["B000002148","서울석촌초등학교","안전",null,null,null,null,"서울석촌초통학구역",69.4,2031,[88.5,72.3,86.7,95.8,69.4,91.1,102.6]],["B000002379","서울양남초등학교","고위험",null,2026,37.53106,127.089595,"서울양남초통학구역",48.8,2028,[52.4,48.8,53.0,50.3,51.5,56.3,61.4]],["B000002048","서울연촌초등학교","안전",null,null,null,null,"서울연촌초통학구역",45.0,2032,[71.4,51.0,56.4,51.7,52.8,45.0,60.3]],["B000002156","서울풍성초등학교","안전",null,null,null,null,"서울풍성초통학구역",84.4,2031,[116.8,90.2,98.9,85.5,84.4,100.3,108.9]],["B000002130","서울문현초등학교","안전",null,null,null,null,"서울문현초등통학구역",81.3,2031,[86.3,91.6,96.9,98.6,81.3,109.3,118.3]],["B000002423","서울송중초등학교","안전",null,null,null,null,"서울송중초통학구역",65.0,2030,[75.3,77.1,78.0,65.0,83.3,87.2,69.9]],["B000001962","서울고척초등학교","안전",null,null,null,null,"서울고척초통학구역",236.7,2027,[236.7,240.5,247.8,258.6,265.5,296.4,350.8]],["B000002153","서울잠전초등학교","안전",null,null,null,null,"서울잠전초통학구역",77.0,2031,[119.7,98.6,91.8,97.0,77.0,87.8,114.0]],["B000002112","서울이태원초등학교","폐교위험",2026,2027,37.535999,126.988066,"서울이태원초통학구역",10.6,2028,[22.0,10.6,19.0,17.2,14.7,20.3,18.8]],["B000001914","서울홍은초등학교","고위험",null,2026,37.597555,126.949469,"서울홍은초통학구역",29.6,2028,[34.1,29.6,37.6,32.7,34.3,35.5,34.6]],["B000002136","서울잠현초등학교","안전",null,null,null,null,"서울잠현초통학구역",59.4,2033,[131.0,109.6,91.9,86.8,74.1,76.2,59.4]],["B000002232","서울탑산초등학교","안전",null,null,null,null,"서울탑산초통학구역",78.2,2028,[86.3,78.2,88.7,86.8,92.8,96.9,117.7]],["B000001975","서울오류남초등학교","안전",null,null,null,null,"서울오류남초통학구역",64.7,2031,[78.6,69.8,75.3,66.5,64.7,73.6,70.7]],["B000002363","서울응봉초등학교","안전",null,null,null,null,"서울응봉초통학구역",111.8,2031,[144.4,137.8,152.1,136.8,111.8,133.6,161.4]],["B000001939","서울성원초등학교","안전",null,null,null,null,"서울성원초통학구역",54.6,2029,[70.0,57.4,54.6,62.3,58.7,73.3,96.8]],["B000002311","서울삼일초등학교","안전",null,null,null,null,"서울삼일초통학구역",232.3,2031,[307.4,278.4,246.6,241.6,232.3,259.1,284.5]],["B000002230","서울양천초등학교","안전",null,null,null,null,"서울양천초통학구역",64.0,2026,[69.6,67.4,64.0,76.7,71.9,77.5,89.6]],["B000001940","서울성서초등학교","고위험",null,2026,37.560727,126.911309,"서울성서초통학구역",52.1,2030,[62.4,56.8,63.4,52.1,54.4,60.4,64.3]],["B000001878","서울묵동초등학교","안전",null,null,null,null,"서울묵동초통학구역",57.1,2028,[64.4,57.1,58.5,66.7,57.4,57.6,72.1]],["B000001906","서울대은초등학교","안전",null,null,null,null,"서울대은초통학구역",44.3,2029,[50.9,49.4,44.3,48.4,49.8,59.6,77.8]],["B000001972","서울신도림초등학교","안전",null,null,null,null,"서울신도림초통학구역",100.0,2031,[133.3,112.6,107.7,110.8,100.0,109.9,120.3]],["B000002272","서울우암초등학교","고위험",null,2026,37.47213,127.02431,"서울우암초통학구역",31.8,2030,[37.4,34.6,34.7,31.8,34.4,35.0,33.8]],["B000002044","서울상원초등학교","안전",null,null,null,null,"서울상원초통학구역",112.2,2029,[118.9,126.3,112.2,128.5,125.5,137.0,186.6]],["B000002192","서울은정초등학교","안전",null,null,null,null,"서울은정초통학구역",61.6,2031,[97.5,93.4,80.0,63.5,61.6,72.0,67.1]],["B000001917","서울연가초등학교","안전",null,null,null,null,"서울연가초통학구역",206.2,2031,[296.8,241.8,243.0,230.9,206.2,219.2,209.4]],["B000002295","서울신구초등학교","안전",null,null,null,null,"서울신구초통학구역",42.1,2031,[65.0,60.1,55.3,43.5,42.1,53.0,51.4]],["B000002057","서울상곡초등학교","안전",null,null,null,null,"서울상곡초통학구역",90.4,2028,[94.0,90.4,91.9,99.5,101.4,98.4,113.6]],["B000001954","서울미래초등학교","안전",null,null,null,null,"서울미래초통학구역",118.2,2028,[145.9,118.2,125.5,128.3,129.2,147.9,149.7]],["B000001971","서울신미림초등학교","안전",null,null,null,null,"서울신미림초통학구역",120.9,2031,[150.5,130.9,126.6,131.1,120.9,134.5,143.7]],["B000002338","서울인헌초등학교","안전",null,null,null,null,"서울인헌초통학구역",65.8,2030,[83.9,87.8,74.0,65.8,76.0,80.8,97.5]],["B000002014","서울대길초등학교","안전",null,null,null,null,"서울대길초통학구역",125.6,2027,[125.6,127.4,136.9,133.2,139.0,157.8,180.4]],["B000001887","서울구현초등학교","고위험",null,2026,37.609908,126.905681,"서울구현초통학구역",47.0,2031,[71.4,60.4,64.0,62.6,47.0,51.9,64.1]],["B000022763","서울공항초등학교","안전",null,null,null,null,"서울공항초통학구역",105.5,2033,[159.0,143.0,134.6,121.0,118.2,109.5,105.5]],["B000002137","서울신가초등학교","안전",null,null,null,null,"서울신가초통학구역",114.9,2031,[125.1,116.2,135.3,116.9,114.9,159.1,138.0]],["B000001942","서울신석초등학교","안전",null,null,null,null,"서울신석초통학구역",93.4,2031,[137.8,120.0,134.6,104.3,93.4,108.3,115.9]],["B000002245","서울신월초등학교","안전",null,null,null,null,"서울신월초통학구역",109.2,2031,[172.2,142.3,127.7,129.7,109.2,124.8,150.0]],["B000001945","서울한서초등학교","안전",null,null,null,null,"서울한서초통학구역",192.2,2031,[227.0,215.7,211.9,210.8,192.2,197.6,230.0]],["B000002103","서울청구초등학교","안전",null,null,null,null,"서울청구초통학구역",119.4,2031,[121.2,121.5,145.4,131.8,119.4,153.6,186.0]],["B000002214","서울월촌초등학교","고위험",null,2031,37.540386,126.876478,"서울월촌초통학구역",35.4,2031,[96.2,71.4,62.0,53.9,35.4,46.5,36.5]],["B000002282","서울언주초등학교","안전",null,null,null,null,"서울언주초통학구역",85.7,2031,[177.4,143.1,142.3,132.7,85.7,98.0,116.2]],["B000001977","서울문교초등학교","고위험",null,2028,37.466767,126.908917,"서울문교초통학구역",24.6,2032,[44.9,37.4,35.7,33.9,32.9,24.6,32.4]],["B000002118","서울금양초등학교","안전",null,null,null,null,"서울금양초통학구역",146.8,2030,[165.4,159.7,171.2,146.8,155.8,170.0,203.1]],["B000001844","서울군자초등학교","안전",null,null,null,null,"서울군자초통학구역",62.8,2031,[76.0,71.1,69.6,63.3,62.8,67.8,73.7]],["B000002139","서울가동초등학교","안전",null,null,null,null,"서울가동초통학구역",67.5,2031,[96.4,92.2,85.9,83.8,67.5,70.5,74.6]],["B000001924","서울인왕초등학교","안전",null,null,null,null,"서울인왕초통학구역",98.6,2028,[109.7,98.6,117.2,101.7,126.3,121.6,128.2]],["B000002017","서울초당초등학교","안전",null,null,null,null,"서울초당초통학구역",45.3,2031,[72.6,58.8,56.7,53.5,45.3,46.3,48.9]],["B000002409","서울청덕초등학교","안전",null,null,null,null,"서울청덕초통학구역",41.3,2027,[41.3,50.5,46.8,56.3,48.6,41.6,61.1]],["B000002114","서울용암초등학교","폐교위험",2026,null,37.545316,126.989549,"서울용암초통학구역",7.5,2028,[14.1,7.5,13.9,11.1,10.3,12.0,14.0]],["B000002381","서울중광초등학교","안전",null,null,null,null,"서울중광초통학구역",40.8,2027,[40.8,50.6,44.2,43.8,44.1,41.6,55.9]],["B000002292","서울대현초등학교","안전",null,null,null,null,"서울대현초통학구역",43.7,2033,[115.2,95.5,77.3,72.0,47.1,55.8,43.7]],["B000001859","서울면목초등학교","안전",null,null,null,null,"서울면목초통학구역",122.2,2028,[132.7,122.2,125.6,129.3,135.6,160.7,193.2]],["B000002374","서울자양초등학교","안전",null,null,null,null,"서울자양초통학구역",57.4,2029,[70.2,62.2,57.4,58.7,58.6,68.1,82.0]],["B000002037","서울신화초등학교","고위험",null,2032,37.632662,127.040893,"서울신화초통학구역",37.9,2032,[52.9,42.4,42.6,44.9,42.4,37.9,46.7]],["B000002186","서울신은초등학교","안전",null,null,null,null,"서울신은초통학구역",48.0,2031,[59.7,59.5,57.0,52.1,48.0,53.7,54.9]],["B000002093","서울효제초등학교","폐교위험",2026,null,37.573167,127.003065,"서울효제초통학구역",11.4,2029,[19.8,20.8,11.4,17.8,13.6,21.0,16.8]],["B000002154","서울풍납초등학교","안전",null,null,null,null,"서울풍납초통학구역",45.2,2027,[45.2,54.4,64.4,59.0,60.2,66.6,61.7]],["B000002096","서울남산초등학교","폐교위험",2026,2030,37.559796,126.986785,"서울남산초통학구역",35.2,2026,[37.1,42.0,49.3,64.4,35.2,50.6,61.0]],["B000002152","서울개롱초등학교","안전",null,null,null,null,"서울개롱초통학구역",80.0,2032,[100.9,93.5,94.6,96.5,80.7,80.0,92.9]],["B000002045","서울불암초등학교","고위험",null,2029,37.651132,127.080526,"서울불암초통학구역",21.0,2033,[63.9,47.8,31.9,31.9,22.9,29.4,21.0]],["B000002248","서울등현초등학교","안전",null,null,null,null,"서울등현초통학구역",46.7,2028,[56.0,46.7,54.8,54.8,48.3,51.6,65.0]],["B000002360","서울송원초등학교","고위험",null,2026,37.5541,127.069682,"서울송원초통학구역",26.6,2031,[36.3,37.3,38.4,28.1,26.6,26.8,34.1]],["B000002407","서울정수초등학교","안전",null,null,null,null,"서울정수초통학구역",63.7,2032,[77.9,88.6,77.5,78.9,76.2,63.7,71.2]],["B000002259","서울매헌초등학교","안전",null,null,null,null,"서울매헌초통학구역",64.0,2031,[72.5,73.8,74.0,76.8,64.0,71.7,90.2]],["B000002199","서울강신초등학교","안전",null,null,null,null,"서울강신초통학구역",63.3,2031,[92.1,86.6,68.8,69.7,63.3,64.1,69.2]],["B000002108","서울용산초등학교","안전",null,null,null,null,"서울용산초통학구역",139.3,2026,[141.4,142.6,139.3,156.8,151.7,169.2,188.8]],["B000002241","서울방화초등학교","안전",null,null,null,null,"서울방화초통학구역",48.5,2027,[48.5,72.7,63.4,58.9,61.1,74.8,75.9]],["B000002279","서울대진초등학교","안전",null,null,null,null,"서울대진초통학구역",44.9,2029,[61.1,54.0,44.9,45.5,48.6,54.4,80.7]],["B000002240","서울개화초등학교","고위험",null,2027,37.573712,126.80457,"서울개화초통학구역",33.3,2027,[33.3,40.5,37.0,37.3,38.3,42.3,44.9]],["B000002308","서울본동초등학교","안전",null,null,null,null,"서울본동초통학구역",40.8,2030,[44.3,41.1,52.1,40.8,45.3,51.5,57.7]],["B000002123","서울방이초등학교","안전",null,null,null,null,"서울방이초통학구역",79.6,2031,[109.9,97.4,89.1,90.4,79.6,86.5,140.7]],["B000002424","서울화계초등학교","안전",null,null,null,null,"서울화계초통학구역",41.2,2030,[46.6,49.7,50.1,41.2,45.0,47.4,42.6]],["B000001963","서울덕의초등학교","안전",null,null,null,null,"서울덕의초통학구역",112.1,2030,[138.6,113.9,130.4,112.1,113.9,112.5,134.6]],["B000002226","서울삼정초등학교","고위험",null,2027,37.580555,126.810539,"서울삼정초통학구역",31.9,2029,[36.4,38.3,31.9,46.7,48.6,51.2,66.0]],["B000002265","서울방배초등학교","안전",null,null,null,null,"서울방배초통학구역",73.1,2031,[106.5,93.3,92.1,88.1,73.1,80.0,86.2]],["B000024069","서울개포초등학교","안전",null,null,null,null,"서울개포초통학구역",88.1,2031,[91.3,96.0,94.5,89.8,88.1,111.0,118.9]],["B000001947","서울신북초등학교","안전",null,null,null,null,"서울신북초통학구역",55.1,2029,[68.9,56.9,55.1,62.4,57.0,72.1,93.7]],["B000002190","서울목운초등학교","안전",null,null,null,null,"서울목운초통학구역",41.9,2033,[144.2,103.4,75.9,73.2,50.1,45.4,41.9]],["B000001932","서울용강초등학교","안전",null,null,null,null,"서울용강초통학구역",115.9,2031,[140.2,131.2,129.4,128.8,115.9,117.4,141.1]],["B000001884","서울진관초등학교","폐교위험",2033,2026,37.645474,126.929104,"서울진관초통학구역",16.0,2033,[30.2,27.0,26.0,21.3,19.4,17.4,16.0]],["B000002358","서울경일초등학교","안전",null,null,null,null,"서울경일초통학구역",53.2,2027,[53.2,54.4,60.1,63.0,59.2,63.9,81.9]],["B000002430","서울유현초등학교","고위험",null,2027,37.631655,127.011447,"서울유현초통학구역",25.8,2032,[36.9,36.6,27.7,31.3,26.9,25.8,32.2]],["B000002411","서울숭례초등학교","안전",null,null,null,null,"서울숭례초통학구역",75.3,2031,[99.2,98.1,89.6,83.7,75.3,86.3,83.0]],["B000002367","서울양진초등학교","안전",null,null,null,null,"서울양진초통학구역",79.8,2031,[173.0,121.5,108.5,96.9,79.8,81.0,84.1]],["B000001920","서울연희초등학교","안전",null,null,null,null,"서울연희초통학구역",53.4,2030,[77.3,71.2,60.3,53.4,55.4,57.1,61.1]],["B000002021","서울누원초등학교","안전",null,null,null,null,"서울누원초통학구역",92.0,2029,[105.8,102.2,92.0,100.2,93.6,97.0,94.2]],["B000002120","서울남정초등학교","안전",null,null,null,null,"서울남정초통학구역",88.4,2026,[93.8,90.7,88.4,100.6,90.2,106.4,126.6]],["B000002215","서울영도초등학교","고위험",null,2031,37.535901,126.871966,"서울영도초통학구역",37.9,2033,[108.7,79.5,64.0,57.5,38.7,43.1,37.9]],["B000025001","서울율현초등학교","안전",null,null,null,null,"서울율현초통학구역",126.4,2030,[180.4,155.9,131.3,126.4,134.8,133.3,155.4]],["B000001852","서울종암초등학교","안전",null,null,null,null,"서울종암초통학구역",53.7,2031,[69.3,71.4,58.5,65.4,53.7,65.2,76.8]],["B000002402","서울석계초등학교","안전",null,null,null,null,"서울석계초통학구역",82.3,2031,[89.3,83.9,88.3,90.6,82.3,102.8,107.1]],["B000002026","서울창도초등학교","안전",null,null,null,null,"서울창도초통학구역",68.9,2032,[104.7,81.3,87.7,84.5,78.7,68.9,76.7]],["B000002207","서울신남초등학교","안전",null,null,null,null,"서울신남초통학구역",176.9,2033,[231.0,192.4,206.9,200.9,179.9,177.8,176.9]],["B000002169","서울길동초등학교","안전",null,null,null,null,"서울길동초통학구역",64.1,2028,[73.0,64.1,79.2,77.3,72.9,88.6,85.6]],["B000002198","서울갈산초등학교","안전",null,null,null,null,"서울갈산초통학구역",83.2,2031,[178.1,137.8,122.2,86.2,83.2,85.4,87.3]],["B000002318","서울남성초등학교","안전",null,null,null,null,"서울남성초통학구역",58.2,2031,[80.9,79.3,72.1,64.8,58.2,63.2,68.1]],["B000001905","서울증산초등학교","안전",null,null,null,null,"서울증산초통학구역",93.4,2031,[131.6,125.8,127.4,121.8,93.4,127.4,148.0]],["B000002304","서울포이초등학교","안전",null,null,null,null,"서울포이초통학구역",79.9,2032,[105.5,87.3,94.2,89.2,95.1,79.9,107.7]],["B000002376","서울신양초등학교","안전",null,null,null,null,"서울신양초통학구역",69.3,2031,[101.2,85.4,89.5,73.4,69.3,85.0,82.8]],["B000001970","서울구일초등학교","안전",null,null,null,null,"서울구일초통학구역",109.9,2029,[132.5,115.7,109.9,133.6,118.6,124.7,158.1]],["B000002334","서울청룡초등학교","고위험",null,2028,37.475806,126.951229,"서울청룡초통학구역",38.6,2028,[42.6,38.6,45.7,47.8,50.6,55.8,60.8]],["B000002312","서울행림초등학교","안전",null,null,null,null,"서울행림초통학구역",46.3,2027,[46.3,53.2,49.4,47.0,51.8,54.5,63.0]],["B000002049","서울태랑초등학교","폐교위험",2026,null,37.626233,127.090837,"서울태랑초통학구역",26.1,2031,[34.0,28.3,28.0,29.6,26.1,27.7,27.4]],["B000002268","서울서이초등학교","안전",null,null,null,null,"서울서이초통학구역",124.5,2033,[167.2,132.3,157.2,164.1,133.9,132.9,124.5]],["B000002373","서울장안초등학교","고위험",null,2026,37.55017,127.072222,"서울장안초통학구역",43.0,2032,[67.7,52.7,49.4,52.1,45.3,43.0,51.3]],["B000002227","서울정곡초등학교","고위험",null,2029,37.576935,126.818893,"서울정곡초통학구역",36.9,2029,[41.3,41.3,36.9,48.3,49.5,50.6,62.3]],["B000002293","서울삼릉초등학교","안전",null,null,null,null,"서울삼릉초통학구역",65.8,2030,[89.1,80.1,85.4,65.8,67.7,66.6,71.5]],["B000002036","서울신창초등학교","고위험",null,2028,37.636572,127.041897,"서울신창초통학구역",31.3,2032,[47.5,32.1,42.1,38.2,34.4,31.3,39.9]],["B000001874","서울신현초등학교","안전",null,null,null,null,"서울신현초통학구역",78.6,2030,[93.3,87.0,86.9,78.6,88.8,84.8,90.3]],["B000001861","서울동원초등학교","안전",null,null,null,null,"서울동원초통학구역",52.9,2028,[65.4,52.9,58.0,58.6,60.9,59.8,54.6]],["B000001996","서울영중초등학교","안전",null,null,null,null,"서울영중초통학구역",164.3,2026,[167.5,164.3,171.0,186.3,174.1,190.0,233.6]],["B000002310","서울동작초등학교","안전",null,null,null,null,"서울동작초통학구역",90.5,2029,[133.9,106.5,90.5,101.4,106.1,123.6,138.2]],["B000002109","서울원효초등학교","안전",null,null,null,null,"서울원효초통학구역",120.3,2031,[132.5,144.7,136.7,125.6,120.3,124.5,164.4]],["B000002395","서울길원초등학교","안전",null,null,null,null,"서울길원초통학구역",123.6,2032,[193.6,186.9,166.3,148.1,145.4,123.6,138.5]],["B000001863","서울망우초등학교","안전",null,null,null,null,"서울망우초통학구역",47.2,2028,[62.5,47.2,53.2,56.2,56.9,57.6,53.8]],["B000002263","서울이수초등학교","안전",null,null,null,null,"서울이수초통학구역",52.6,2027,[52.6,74.8,71.7,65.6,57.6,61.0,70.3]],["B000001930","서울공덕초등학교","안전",null,null,null,null,"서울공덕초통학구역",196.4,2031,[225.0,217.5,228.4,203.1,196.4,212.8,239.3]],["B000002315","서울신길초등학교","안전",null,null,null,null,"서울신길초통학구역",75.5,2031,[106.9,82.6,89.2,86.6,75.5,82.7,107.3]],["B000002053","서울공릉초등학교","고위험",null,2029,37.619304,127.074215,"서울공릉초통학구역",64.9,2031,[91.0,75.2,70.6,77.1,64.9,68.6,78.3]],["B000002150","서울오금초등학교","안전",null,null,null,null,"서울오금초통학구역",84.7,2031,[104.5,92.7,99.9,99.5,84.7,85.4,101.5]],["B000002087","서울혜화초등학교","고위험",null,2026,37.589122,126.999914,"서울혜화초통학구역",26.4,2029,[36.3,32.8,26.4,28.9,28.4,28.2,27.5]],["B000002323","서울흑석초등학교","안전",null,null,null,null,"서울흑석초통학구역",52.4,2032,[73.0,63.4,57.9,56.4,65.4,52.4,64.2]],["B000002283","서울대치초등학교","고위험",null,2030,37.491297,127.062038,"서울대치초통학구역",26.1,2033,[103.0,83.5,64.8,38.3,32.1,30.4,26.1]],["B000002290","서울학동초등학교","안전",null,null,null,null,"서울학동초통학구역",45.2,2031,[46.5,53.5,48.5,49.2,45.2,52.3,62.8]],["B000001897","서울수색초등학교","안전",null,null,null,null,"서울수색초통학구역",123.1,2031,[155.8,144.2,133.9,142.4,123.1,165.9,183.2]],["B000001994","서울여의도초등학교","안전",null,null,null,null,"서울여의도초통학구역",106.3,2032,[134.8,124.3,124.3,119.1,117.4,106.3,127.2]],["B000002055","서울상계초등학교","안전",null,null,null,null,"서울상계초통학구역",79.4,2027,[79.4,91.2,92.1,87.6,92.8,95.6,100.4]],["B000001958","서울개명초등학교","고위험",null,2026,37.483012,126.850403,"서울개명초통학구역",22.5,2030,[38.4,28.4,28.4,22.5,27.9,37.9,31.0]],["B000002144","서울오륜초등학교","고위험",null,2031,37.512432,127.134422,"서울오륜초통학구역",30.6,2031,[61.0,48.6,45.9,41.1,30.6,30.8,35.5]],["B000002205","서울신강초등학교","안전",null,null,null,null,"서울신강초통학구역",58.4,2031,[80.8,68.2,63.1,69.2,58.4,63.1,74.4]],["B000001982","서울가산초등학교","고위험",null,2026,37.478204,126.896373,"서울가산초통학구역",46.8,2026,[46.8,49.5,48.1,50.8,57.8,58.8,85.5]],["B000001883","서울은진초등학교","안전",null,null,null,null,"서울은진초통학구역",51.6,2033,[97.2,86.7,83.5,68.5,62.3,56.0,51.6]],["B000001990","서울금산초등학교","폐교위험",2028,2026,37.441415,126.907881,"서울금산초통학구역",11.9,2028,[25.8,11.9,12.7,22.0,14.2,13.7,18.4]],["B000002070","서울을지초등학교","고위험",null,2031,37.650698,127.073217,"서울을지초통학구역",27.2,2032,[88.6,69.6,59.9,47.7,36.8,27.2,28.5]],["B000002370","서울동의초등학교","안전",null,null,null,null,"서울동의초통학구역",55.5,2031,[75.6,81.1,75.6,64.4,55.5,71.0,77.2]],["B000001870","서울원묵초등학교","안전",null,null,null,null,"서울원묵초통학구역",52.7,2028,[83.4,52.7,62.9,63.5,59.2,54.5,62.6]],["B000001952","서울천왕초등학교","고위험",null,2026,37.481603,126.836996,"서울천왕초통학구역",17.3,2031,[22.0,19.3,21.1,18.0,17.3,19.9,17.8]],["B000024206","서울고현초등학교","안전",null,null,null,null,"서울고현초통학구역",122.6,2033,[259.4,213.8,196.0,175.1,148.0,142.1,122.6]],["B000002400","서울미아초등학교","안전",null,null,null,null,"서울미아초통학구역",148.1,2033,[239.6,199.4,193.7,165.3,170.5,158.7,148.1]],["B000002326","서울남부초등학교","고위험",null,2026,37.485171,126.922092,"서울남부초통학구역",23.1,2031,[33.8,31.5,28.3,27.4,23.1,29.7,30.8]],["B000002419","서울오현초등학교","안전",null,null,null,null,"서울오현초통학구역",57.8,2030,[65.6,68.8,59.8,57.8,68.6,66.6,69.9]],["B000002143","서울마천초등학교","안전",null,null,null,null,"서울마천초통학구역",77.1,2029,[116.5,92.9,77.1,92.3,87.2,86.9,91.2]],["B000002346","서울신성초등학교","안전",null,null,null,null,"서울신성초통학구역",54.8,2030,[65.4,59.2,65.2,54.8,60.0,71.0,80.8]],["B000002008","서울영림초등학교","고위험",null,2026,37.487341,126.902524,"서울영림초통학구역",33.3,2026,[42.1,35.8,38.0,35.2,33.3,39.8,58.6]],["B000002233","서울가양초등학교","안전",null,null,null,null,"서울가양초통학구역",60.9,2027,[60.9,79.8,84.2,92.3,119.2,141.3,179.0]],["B000002309","서울은로초등학교","안전",null,null,null,null,"서울은로초통학구역",105.2,2032,[145.3,125.6,116.0,112.7,130.0,105.2,127.2]],["B000002066","서울연지초등학교","안전",null,null,null,null,"서울연지초통학구역",60.8,2030,[67.4,68.5,65.1,60.8,66.1,63.8,70.9]],["B000001985","서울독산초등학교","안전",null,null,null,null,"서울독산초통학구역",68.6,2032,[98.8,89.5,86.2,81.2,85.0,68.6,90.2]],["B000002294","서울왕북초등학교","안전",null,null,null,null,"서울왕북초통학구역",51.1,2032,[117.9,68.5,85.7,51.7,53.9,51.1,63.6]],["B000001976","서울두산초등학교","안전",null,null,null,null,"서울두산초통학구역",109.5,2027,[109.5,128.2,131.6,135.1,137.4,141.0,176.3]],["B000002285","서울대도초등학교","안전",null,null,null,null,"서울대도초통학구역",88.1,2032,[227.0,186.6,145.7,116.8,94.6,88.1,106.2]],["B000002158","서울버들초등학교","안전",null,null,null,null,"서울버들초통학구역",68.9,2031,[124.0,107.6,101.2,83.3,68.9,70.8,85.0]],["B000002319","서울남사초등학교","안전",null,null,null,null,"서울남사초통학구역",62.1,2030,[68.6,78.5,67.1,62.1,88.1,68.7,101.0]],["B000002110","서울청파초등학교","고위험",null,2028,37.547988,126.9643,"서울청파초통학구역",78.7,2028,[88.8,78.7,96.7,81.2,85.5,93.9,102.3]],["B000002003","서울선유초등학교","안전",null,null,null,null,"서울선유초통학구역",51.5,2026,[58.1,56.4,51.5,57.7,63.8,66.4,88.4]],["B000001999","서울도림초등학교","고위험",null,2026,37.507942,126.906999,"서울도림초통학구역",60.8,2029,[71.6,60.8,71.3,85.0,86.7,74.2,97.9]],["B000002004","서울당중초등학교","안전",null,null,null,null,"서울당중초통학구역",107.1,2026,[114.6,107.1,133.3,119.8,125.8,121.8,186.4]],["B000001889","서울은평초등학교","안전",null,null,null,null,"서울은평초통학구역",165.9,2031,[176.6,176.0,186.3,199.7,165.9,166.9,190.4]],["B000002333","서울봉현초등학교","안전",null,null,null,null,"서울봉현초통학구역",164.8,2029,[172.1,173.3,164.8,175.6,171.9,191.6,207.4]],["B000001912","서울미동초등학교","고위험",null,2026,37.563421,126.965913,"서울미동초통학구역",51.4,2031,[53.2,65.7,66.4,62.2,51.4,57.0,69.0]],["B000002243","서울화곡초등학교","안전",null,null,null,null,"서울화일초통학구역",45.1,2031,[77.7,67.0,62.0,52.9,45.1,56.5,73.6]],["B000002000","서울대동초등학교","고위험",null,2026,37.49366,126.899778,"서울대동초통학구역",24.8,2026,[27.4,26.1,24.8,26.3,25.8,29.9,38.8]],["B000001997","서울영동초등학교","안전",null,null,null,null,"서울영동초통학구역",114.0,2031,[118.0,118.0,114.4,129.5,114.0,129.8,153.5]],["B000001849","서울전곡초등학교","고위험",null,2026,37.580524,127.056506,"서울전곡초통학구역",26.2,2030,[32.1,28.9,28.1,26.2,30.5,28.4,28.1]],["B000002273","서울신동초등학교","안전",null,null,null,null,"서울신동초통학구역",92.3,2031,[151.2,132.0,114.5,114.8,92.3,108.9,100.6]],["B000002410","서울일신초등학교","안전",null,null,null,null,"서울일신초통학구역",60.2,2031,[78.0,76.3,72.0,63.5,60.2,68.2,69.7]],["B000002200","서울양화초등학교","안전",null,null,null,null,"서울양화초통학구역",121.2,2031,[163.1,135.7,142.6,140.9,121.2,159.2,142.6]],["B000002127","서울문덕초등학교","안전",null,null,null,null,"서울문덕초통학구역",144.4,2031,[150.5,160.5,159.4,173.2,144.4,178.5,202.6]],["B000025373","서울위례솔초등학교","안전",null,null,null,null,"서울위례솔초통학구역",106.4,2032,[237.0,230.2,223.3,134.8,117.0,106.4,118.3]],["B000002113","서울서빙고초등학교","고위험",null,2026,37.521248,126.99224,"서울서빙고초통학구역",55.8,2032,[81.7,78.1,55.8,62.8,70.0,57.0,64.0]],["B000002291","서울대곡초등학교","고위험",null,2033,37.494676,127.065026,"서울대곡초통학구역",38.8,2033,[97.7,81.7,66.2,60.4,40.4,48.0,38.8]],["B000002046","서울수암초등학교","폐교위험",2031,2028,37.648134,127.081323,"서울수암초통학구역",15.1,2033,[43.6,32.6,21.4,21.8,16.2,21.0,15.1]],["B000001988","서울탑동초등학교","고위험",null,2026,37.452625,126.914716,"서울탑동초통학구역",43.2,2033,[60.9,56.6,49.8,46.1,56.1,48.5,43.2]],["B000002264","서울서래초등학교","안전",null,null,null,null,"서울서래초통학구역",78.9,2031,[170.2,135.8,126.0,102.5,78.9,85.6,99.2]],["B000001871","서울묵현초등학교","안전",null,null,null,null,"서울묵현초통학구역",68.6,2028,[103.8,68.6,87.3,88.0,72.0,76.4,84.3]],["B000002077","서울상수초등학교","안전",null,null,null,null,"서울상수초통학구역",54.4,2029,[60.4,55.8,54.4,60.0,61.0,66.9,81.9]],["B000024031","서울가재울초등학교","안전",null,null,null,null,"서울가재울초통학구역",196.4,2033,[335.8,294.7,264.0,232.0,217.7,198.0,196.4]],["B000002277","서울수서초등학교","고위험",null,2026,37.491024,127.10156,"서울수서초통학구역",26.3,2027,[26.3,27.7,38.1,31.2,37.4,36.0,63.8]],["B000001845","서울장평초등학교","고위험",null,2033,37.573784,127.073316,"서울장평초통학구역",77.4,2033,[135.8,128.3,111.4,102.1,97.0,96.3,77.4]],["B000002052","서울용원초등학교","고위험",null,2031,37.629614,127.068776,"서울용원초통학구역",37.6,2031,[52.9,55.2,40.4,47.3,37.6,43.1,51.6]],["B000002380","서울용마초등학교","안전",null,null,null,null,"서울용마초통학구역",89.1,2029,[102.2,103.6,89.1,103.2,90.0,90.2,107.2]],["B000002065","서울한천초등학교","안전",null,null,null,null,"서울한천초통학구역",94.2,2030,[104.6,94.3,115.1,94.2,108.8,113.8,152.0]],["B000022774","서울상현초등학교","안전",null,null,null,null,"서울상현초통학구역",82.6,2028,[99.8,82.6,86.2,87.1,87.7,101.1,103.5]],["B000002390","서울정덕초등학교","안전",null,null,null,null,"서울정덕초통학구역",143.1,2032,[187.9,162.7,176.5,157.8,145.7,143.1,162.1]],["B000002228","서울가곡초등학교","안전",null,null,null,null,"서울가곡초통학구역",51.2,2031,[87.3,67.2,75.3,65.1,51.2,54.4,54.3]],["B000002354","서울금옥초등학교","안전",null,null,null,null,"서울금옥초통학구역",145.0,2030,[158.9,147.9,158.2,145.0,148.2,160.9,185.1]],["B000001973","서울오류초등학교","안전",null,null,null,null,"서울오류초통학구역",115.7,2027,[115.7,121.1,121.7,127.4,120.9,147.0,167.8]],["B000002067","서울선곡초등학교","고위험",null,2026,37.618657,127.058411,"서울선곡초통학구역",71.5,2032,[75.9,76.0,76.6,74.4,79.3,71.5,79.2]],["B000002313","서울신남성초등학교","안전",null,null,null,null,"서울신남성초통학구역",172.2,2029,[180.4,190.8,172.2,196.9,202.0,205.2,238.0]],["B000001868","서울중목초등학교","안전",null,null,null,null,"서울중목초통학구역",79.5,2029,[90.1,85.4,79.5,85.2,88.9,90.6,111.2]],["B000001899","서울서신초등학교","고위험",null,2027,37.59245,126.907458,"서울서신초통학구역",32.6,2031,[39.8,34.8,42.0,35.2,32.6,45.4,41.9]],["B000001915","서울홍제초등학교","안전",null,null,null,null,"서울홍제초통학구역",135.1,2031,[149.2,143.9,156.0,147.4,135.1,142.3,140.8]],["B000001986","서울안천초등학교","고위험",null,2026,37.458529,126.888311,"서울안천초통학구역",49.9,2027,[49.9,60.9,63.8,64.8,62.4,65.5,76.7]],["B000001862","서울면북초등학교","폐교위험",2028,2026,37.594577,127.10339,"서울면북초통학구역",14.8,2029,[18.2,15.1,14.8,17.8,16.5,18.0,17.4]],["B000002372","서울구남초등학교","안전",null,null,null,null,"서울구남초통학구역",97.7,2031,[153.1,134.5,129.0,119.6,97.7,111.5,141.5]],["B000025276","서울새솔초등학교","고위험",null,2033,37.617945,127.111274,"서울새솔초통학구역",39.0,2033,[46.1,47.2,45.6,41.2,45.8,42.1,39.0]],["B000001950","서울상암초등학교","안전",null,null,null,null,"서울상암초통학구역",40.6,2033,[67.3,56.0,66.9,60.2,56.9,48.1,40.6]],["B000002011","서울대영초등학교","안전",null,null,null,null,"서울대영초통학구역",118.8,2029,[151.5,122.2,118.8,139.5,145.1,125.3,179.4]],["B000002396","서울숭곡초등학교","안전",null,null,null,null,"서울숭곡초통학구역",149.0,2033,[233.2,173.9,190.3,163.4,179.6,185.2,149.0]],["B000002058","서울상월초등학교","안전",null,null,null,null,"서울상월초통학구역",44.2,2028,[46.0,44.2,48.6,50.5,53.6,52.0,54.9]],["B000002302","서울언북초등학교","안전",null,null,null,null,"서울언북초통학구역",127.1,2031,[177.4,167.0,158.6,137.8,127.1,139.0,142.2]],["B000002194","서울양명초등학교","안전",null,null,null,null,"서울양명초통학구역",47.9,2033,[106.5,103.2,82.6,62.9,49.9,51.3,47.9]],["B000001981","서울신흥초등학교","고위험",null,2029,37.459685,126.908777,"서울신흥초통학구역",34.7,2031,[44.8,44.6,35.6,45.7,34.7,35.9,36.3]],["B000002383","서울용곡초등학교","안전",null,null,null,null,"서울용곡초통학구역",67.7,2031,[71.9,85.6,75.0,71.4,67.7,75.0,84.5]],["B000002020","서울창림초등학교","안전",null,null,null,null,"서울창림초통학구역",72.2,2031,[97.7,75.2,96.5,76.0,72.2,74.0,83.5]],["B000002138","서울가주초등학교","안전",null,null,null,null,"서울가주초통학구역",61.0,2031,[92.3,88.1,79.3,76.6,61.0,62.8,64.7]],["B000001979","서울금동초등학교","안전",null,null,null,null,"서울금동초통학구역",40.6,2033,[57.6,61.2,45.4,42.5,60.1,47.8,40.6]],["B000002300","서울영희초등학교","고위험",null,2027,37.492345,127.081072,"서울영희초통학구역",27.8,2029,[40.0,40.2,27.8,35.6,37.2,43.2,46.7]],["B000002098","서울봉래초등학교","안전",null,null,null,null,"서울봉래초통학구역",84.0,2027,[84.0,101.7,113.1,106.1,86.4,85.2,109.0]],["B000001894","서울불광초등학교","안전",null,null,null,null,"서울불광초통학구역",95.8,2029,[112.0,122.2,95.8,130.9,99.3,104.8,133.6]],["B000001944","서울소의초등학교","안전",null,null,null,null,"서울소의초통학구역",99.3,2031,[107.7,105.5,120.5,102.2,99.3,107.2,120.9]],["B000002131","서울잠일초등학교","안전",null,null,null,null,"서울잠일초통학구역",76.3,2031,[169.3,142.2,132.8,98.2,76.3,79.0,79.9]],["B000002035","서울창일초등학교","안전",null,null,null,null,"서울창일초통학구역",68.5,2028,[97.1,68.5,88.9,69.3,74.7,82.4,94.0]],["B000002005","서울도신초등학교","폐교위험",2026,2027,37.498833,126.901093,"서울도신초통학구역",17.4,2026,[18.1,19.0,17.4,18.5,20.2,22.3,24.1]],["B000002188","서울경인초등학교","고위험",null,2031,37.533072,126.886354,"서울경인초통학구역",23.7,2033,[84.8,61.9,50.7,42.3,25.3,31.6,23.7]],["B000002327","서울신우초등학교","고위험",null,2026,37.462869,126.932795,"서울신우초통학구역",20.6,2030,[24.1,29.6,24.7,20.6,25.8,22.2,36.7]],["B000001965","서울동구로초등학교","안전",null,null,null,null,"서울동구로초통학구역",43.2,2028,[54.1,43.2,46.9,51.9,52.4,56.6,77.3]],["B000002426","서울수송초등학교","안전",null,null,null,null,"서울수송초통학구역",57.4,2032,[87.1,63.8,75.8,67.5,63.8,57.4,75.8]],["B000002408","서울정릉초등학교","안전",null,null,null,null,"서울정릉초통학구역",84.2,2032,[89.0,105.4,90.2,91.3,84.8,84.2,92.1]],["B000002145","서울세륜초등학교","고위험",null,2028,37.518429,127.134035,"서울세륜초통학구역",21.9,2031,[51.1,39.4,36.0,30.9,21.9,22.4,25.1]],["B000001989","서울백산초등학교","고위험",null,2028,37.446808,126.905176,"서울백산초통학구역",31.7,2028,[48.8,31.7,41.8,38.8,33.1,37.0,39.4]],["B000002219","서울신곡초등학교","안전",null,null,null,null,"서울신곡초통학구역",83.5,2031,[111.5,125.3,98.8,112.3,83.5,95.9,109.0]],["B000002262","서울방일초등학교","안전",null,null,null,null,"서울방일초통학구역",98.1,2031,[144.6,112.5,118.3,109.1,98.1,108.0,116.2]],["B000002321","서울보라매초등학교","안전",null,null,null,null,"서울보라매초통학구역",165.3,2029,[177.8,174.7,165.3,176.9,180.7,188.3,205.6]],["B000002099","서울광희초등학교","안전",null,null,null,null,"서울광희초통학구역",103.3,2031,[144.2,118.0,127.3,133.7,103.3,147.2,169.3]],["B000002023","서울도봉초등학교","고위험",null,2026,37.68672,127.042515,"서울도봉초통학구역",20.3,2031,[26.1,28.2,22.5,24.4,20.3,24.2,26.8]],["B000002135","서울잠실초등학교","안전",null,null,null,null,"서울잠실초통학구역",64.9,2033,[139.3,116.4,98.0,92.2,78.2,80.4,64.9]],["B000002189","서울서정초등학교","안전",null,null,null,null,"서울서정초통학구역",42.4,2032,[124.5,86.0,72.5,58.0,47.8,42.4,47.1]],["B000002043","서울온곡초등학교","안전",null,null,null,null,"서울온곡초통학구역",86.7,2029,[92.7,99.5,86.7,98.8,95.0,97.2,124.3]],["B000001913","서울금화초등학교","안전",null,null,null,null,"서울금화초통학구역",120.4,2031,[120.4,134.2,129.5,133.1,120.6,140.8,143.7]],["B000001866","서울중곡초등학교","안전",null,null,null,null,"서울중곡초통학구역",90.8,2032,[105.5,111.6,101.7,96.8,102.4,90.8,107.3]],["B000001875","서울신내초등학교","안전",null,null,null,null,"서울신내초통학구역",73.2,2033,[89.0,89.7,87.9,79.9,88.6,80.8,73.2]],["B000001850","서울전농초등학교","안전",null,null,null,null,"서울전농초통학구역",263.2,2030,[311.8,289.8,275.8,263.2,273.2,274.1,288.8]],["B000022762","서울공진초등학교","안전",null,null,null,null,"서울공진초통학구역",90.0,2031,[146.9,135.0,109.9,97.6,90.0,95.4,92.0]],["B000002314","서울영화초등학교","안전",null,null,null,null,"서울영화초통학구역",53.5,2031,[79.3,70.7,71.2,65.1,53.5,64.6,82.3]],["B000002142","서울남천초등학교","고위험",null,2033,37.500901,127.15066,"서울남천초통학구역",39.7,2033,[54.1,46.7,42.2,47.4,44.4,41.8,39.7]],["B000002159","서울신천초등학교","안전",null,null,null,null,"서울신천초통학구역",56.9,2032,[104.1,89.1,84.2,66.9,57.9,56.9,67.4]],["B000001867","서울면동초등학교","안전",null,null,null,null,"서울면동초통학구역",148.2,2032,[163.7,152.4,155.6,154.6,153.0,148.2,167.2]],["B000002040","서울신계초등학교","고위험",null,2026,37.630185,127.052624,"서울신계초통학구역",32.1,2030,[36.0,38.0,32.6,32.1,33.9,32.8,33.6]],["B000001864","서울면일초등학교","안전",null,null,null,null,"서울면일초통학구역",72.1,2029,[84.5,78.1,72.1,85.6,77.4,89.4,99.7]],["B000002157","서울아주초등학교","고위험",null,2032,37.505842,127.075799,"서울아주초통학구역",34.0,2032,[53.1,45.6,46.9,43.4,44.4,34.0,41.4]],["B000002289","서울논현초등학교","고위험",null,2026,37.508447,127.026217,"서울논현초통학구역",18.4,2031,[22.3,23.9,24.7,19.5,18.4,23.2,33.0]],["B000002193","서울신서초등학교","고위험",null,2032,37.520544,126.86231,"서울신서초통학구역",37.5,2033,[100.3,93.5,74.0,54.8,41.1,38.4,37.5]],["B000002281","서울구룡초등학교","안전",null,null,null,null,"서울구룡초통학구역",87.4,2032,[141.7,116.7,112.2,105.0,99.8,87.4,114.8]],["B000001968","서울구로남초등학교","고위험",null,2029,37.485482,126.890786,"서울구로남초통학구역",39.6,2029,[47.4,40.6,39.6,49.5,48.1,48.7,68.4]],["B000001937","서울하늘초등학교","고위험",null,2026,37.585411,126.880817,"서울하늘초통학구역",19.8,2033,[32.9,27.4,32.8,29.5,27.8,23.5,19.8]],["B000002006","서울신영초등학교","안전",null,null,null,null,"서울신영초통학구역",79.1,2026,[80.5,79.1,81.8,94.0,103.9,109.6,128.0]],["B000002412","서울숭인초등학교","안전",null,null,null,null,"서울숭인초통학구역",88.0,2030,[107.2,94.1,90.3,88.0,89.8,99.5,89.1]],["B000002353","서울옥수초등학교","안전",null,null,null,null,"서울옥수초통학구역",141.6,2031,[173.6,156.4,161.5,156.6,141.6,167.0,185.2]],["B000026371","서울숭신초등학교","안전",null,null,null,null,"서울숭신초통학구역",171.0,2031,[243.5,211.3,209.7,203.6,171.0,221.3,209.2]],["B000002371","서울광진초등학교","안전",null,null,null,null,"서울광진초통학구역",54.3,2031,[87.2,76.9,79.2,62.1,54.3,67.1,78.5]],["B000001998","서울당서초등학교","고위험",null,2026,37.531866,126.899565,"서울당서초서울선유초공동통학구역",196.5,2029,[222.9,196.5,197.0,199.9,198.1,216.1,246.0]],["B000002128","서울문정초등학교","안전",null,null,null,null,"서울문정초통학구역",125.9,2031,[164.4,165.2,164.5,164.9,125.9,172.9,183.2]],["B000001854","서울청량초등학교","고위험",null,2026,37.592024,127.055944,"서울청량초통학구역",63.3,2027,[63.3,69.3,66.9,79.8,88.7,80.2,105.9]],["B000002151","서울거여초등학교","안전",null,null,null,null,"서울거여초통학구역",81.5,2032,[99.0,89.5,93.1,96.5,83.4,81.5,93.8]],["B000002209","서울목동초등학교","안전",null,null,null,null,"서울목동초통학구역",55.3,2033,[166.4,116.5,101.7,80.7,64.0,59.6,55.3]],["B000002203","서울신원초등학교","안전",null,null,null,null,"서울신원초통학구역",42.5,2031,[50.8,47.5,46.2,54.0,42.5,43.7,51.6]],["B000002337","서울사당초등학교","안전",null,null,null,null,"서울사당초통학구역",97.9,2030,[101.1,120.1,103.8,97.9,99.6,101.5,142.2]],["B000002422","서울송천초등학교","안전",null,null,null,null,"서울송천초통학구역",117.0,2033,[162.4,149.7,151.6,130.8,129.3,131.5,117.0]],["B000002027","서울숭미초등학교","고위험",null,2030,37.651035,127.027985,"서울숭미초통학구역",59.7,2031,[92.6,92.8,81.4,79.4,59.7,76.2,78.9]],["B000002256","서울원촌초등학교","안전",null,null,null,null,"서울원촌초통학구역",102.8,2032,[221.5,181.3,157.5,124.6,107.2,103.9,102.8]],["B000002019","서울창경초등학교","안전",null,null,null,null,"서울창경초통학구역",95.4,2031,[146.0,122.6,120.1,128.8,95.4,104.5,101.2]],["B000002328","서울신림초등학교","안전",null,null,null,null,"서울신림초통학구역",63.4,2030,[68.5,77.9,75.0,63.4,64.6,66.6,99.3]],["B000002204","서울강서초등학교","안전",null,null,null,null,"서울강서초통학구역",89.0,2032,[121.8,99.6,102.1,115.8,96.6,89.0,108.0]],["B000001841","서울신답초등학교","안전",null,null,null,null,"서울신답초통학구역",172.5,2031,[205.3,196.3,177.2,174.6,172.5,187.0,219.5]],["B000002239","서울송화초등학교","안전",null,null,null,null,"서울송화초통학구역",166.0,2032,[188.6,174.7,179.6,178.4,174.4,166.0,168.5]],["B000002336","서울원당초등학교","고위험",null,2027,37.48138,126.956476,"서울원당초통학구역",36.8,2029,[38.2,41.3,36.8,37.4,37.3,41.2,51.5]],["B000002018","서울신학초등학교","안전",null,null,null,null,"서울신학초통학구역",87.4,2032,[138.7,113.6,108.2,100.7,87.4,87.9,93.8]],["B000001860","서울면남초등학교","안전",null,null,null,null,"서울면남초통학구역",141.3,2029,[147.8,144.2,141.3,148.6,146.3,145.5,159.5]],["B000002306","서울강남초등학교","안전",null,null,null,null,"서울강남초통학구역",179.2,2031,[215.9,180.9,191.2,180.4,179.2,200.2,220.8]],["B000002345","서울난향초등학교","안전",null,null,null,null,"서울난향초통학구역",41.0,2031,[64.4,51.9,52.2,51.7,41.0,48.8,54.2]],["B000001984","서울문성초등학교","고위험",null,2026,37.474962,126.899461,"서울문성초통학구역",28.1,2028,[37.6,28.1,39.9,30.3,29.1,37.5,40.4]],["B000002141","서울거원초등학교","안전",null,null,null,null,"서울거원초통학구역",107.4,2030,[162.5,154.5,143.6,107.4,110.6,109.0,122.3]],["B000002235","서울송정초등학교","안전",null,null,null,null,"서울송정초통학구역",100.4,2031,[162.5,151.7,117.2,104.2,100.4,100.7,102.4]],["B000002075","서울중평초등학교","안전",null,null,null,null,"서울중평초통학구역",101.8,2032,[150.1,118.5,139.5,120.0,112.2,101.8,135.9]],["B000002068","서울월계초등학교","고위험",null,2027,37.627821,127.050695,"서울월계초통학구역",35.8,2030,[39.8,41.6,36.1,35.8,37.5,36.1,37.3]],["B000002202","서울양원초등학교","폐교위험",2026,null,37.538358,126.82349,"서울양원초통학구역",11.4,2029,[13.0,12.0,11.4,16.1,12.2,12.2,13.2]],["B000002073","서울용동초등학교","안전",null,null,null,null,"서울용동초통학구역",46.0,2032,[64.5,49.4,55.7,50.5,52.6,46.0,61.4]],["B000002101","서울신당초등학교","안전",null,null,null,null,"서울신당초통학구역",111.9,2028,[118.9,111.9,121.0,116.4,112.3,117.5,138.1]],["B000002031","서울자운초등학교","안전",null,null,null,null,"서울자운초통학구역",80.3,2028,[98.2,80.3,104.3,82.1,91.6,82.1,93.4]],["B000002368","서울광남초등학교","안전",null,null,null,null,"서울광남초통학구역",73.2,2033,[173.9,116.9,103.4,92.0,74.4,73.8,73.2]],["B000002121","서울신용산초등학교","안전",null,null,null,null,"서울신용산초통학구역",176.2,2031,[275.5,253.1,217.0,206.0,176.2,210.7,197.6]],["B000025372","서울해누리초등학교","안전",null,null,null,null,"서울해누리초통학구역",75.1,2031,[110.7,101.1,100.9,100.2,75.1,88.6,94.2]],["B000002166","서울강덕초등학교","안전",null,null,null,null,"서울강덕초통학구역",89.0,2031,[146.1,125.0,117.6,102.2,89.0,102.8,111.6]],["B000002124","서울가락초등학교","안전",null,null,null,null,"서울가락초통학구역",190.7,2031,[278.4,251.6,254.6,254.8,190.7,227.4,243.0]],["B000002016","서울윤중초등학교","안전",null,null,null,null,"서울윤중초통학구역",46.7,2032,[58.7,54.4,54.3,52.3,51.3,46.7,56.0]],["B000001987","서울금천초등학교","고위험",null,2026,37.454812,126.912869,"서울금천초통학구역",19.5,2031,[28.3,21.3,24.3,24.8,19.5,21.4,21.0]],["B000002047","서울중계초등학교","안전",null,null,null,null,"서울중계초통학구역",57.9,2031,[125.0,99.1,73.6,79.0,57.9,73.3,67.4]],["B000002069","서울원광초등학교","고위험",null,2031,37.654399,127.074954,"서울원광초통학구역",46.7,2033,[117.5,94.2,77.9,67.8,51.8,51.9,46.7]],["B000001873","서울상봉초등학교","안전",null,null,null,null,"서울상봉초통학구역",104.3,2029,[106.2,108.9,104.3,116.3,106.4,110.8,145.6]],["B000001842","서울용두초등학교","안전",null,null,null,null,"서울용두초통학구역",60.8,2031,[85.5,81.7,67.9,66.6,60.8,76.2,91.2]],["B000002024","서울방학초등학교","안전",null,null,null,null,"서울방학초통학구역",54.4,2032,[88.4,77.1,73.6,69.0,60.7,54.4,57.6]],["B000002298","서울역삼초등학교","고위험",null,2030,37.493161,127.032653,"서울역삼초통학구역",36.3,2030,[53.8,44.6,42.2,36.3,42.6,37.1,57.6]],["B000002270","서울원명초등학교","안전",null,null,null,null,"서울원명초통학구역",99.4,2033,[238.9,191.1,171.8,132.6,111.4,112.5,99.4]],["B000002344","서울난우초등학교","고위험",null,2030,37.477283,126.917705,"서울난우초통학구역",37.6,2030,[49.5,44.4,53.7,37.6,37.6,38.7,42.2]],["B000002343","서울관악초등학교","안전",null,null,null,null,"서울관악초통학구역",75.4,2028,[82.3,75.4,86.9,87.1,85.9,98.5,108.0]],["B000002427","서울수유초등학교","안전",null,null,null,null,"서울수유초통학구역",52.9,2032,[64.2,67.0,56.7,58.6,56.3,52.9,59.4]],["B000001847","서울배봉초등학교","안전",null,null,null,null,"서울배봉초통학구역",96.1,2030,[125.4,113.0,101.7,96.1,104.8,100.6,98.6]],["B000002254","서울신중초등학교","안전",null,null,null,null,"서울신중초통학구역",141.2,2031,[198.7,171.9,174.3,175.3,141.2,158.3,196.6]],["B000002391","서울삼선초등학교","안전",null,null,null,null,"서울삼선초통학구역",60.1,2031,[85.0,65.0,63.4,69.4,60.1,68.4,68.6]],["B000030583","서울개현초등학교","안전",null,null,null,null,"서울개현초통학구역",112.0,2031,[158.0,134.7,119.8,122.9,112.0,121.8,132.5]],["B000002061","서울동일초등학교","안전",null,null,null,null,"서울동일초통학구역",60.9,2027,[60.9,63.2,62.0,74.6,77.5,92.3,119.6]],["B000001948","서울성산초등학교","안전",null,null,null,null,"서울성산초통학구역",80.1,2030,[92.0,82.3,82.2,80.1,81.2,83.9,99.6]],["B000001876","서울중화초등학교","안전",null,null,null,null,"서울중화초통학구역",173.0,2030,[206.2,183.0,187.6,173.0,194.7,194.3,225.5]],["B000002275","서울봉은초등학교","안전",null,null,null,null,"서울봉은초통학구역",85.8,2033,[120.8,98.1,102.1,91.7,109.2,93.6,85.8]],["B000002361","서울옥정초등학교","안전",null,null,null,null,"서울옥정초통학구역",121.2,2030,[129.7,124.2,133.0,121.2,126.6,138.5,150.8]],["B000002089","서울독립문초등학교","안전",null,null,null,null,"서울독립문초통학구역",82.1,2033,[127.2,105.6,107.5,98.6,88.2,94.7,82.1]],["B000002332","서울미성초등학교","안전",null,null,null,null,"서울미성초통학구역",57.5,2031,[76.8,67.7,76.6,61.3,57.5,58.9,66.6]],["B000002330","서울난곡초등학교","고위험",null,2028,37.469285,126.916642,"서울난곡초통학구역",30.2,2030,[41.0,36.1,45.4,30.2,30.8,32.7,34.8]],["B000001840","서울답십리초등학교","안전",null,null,null,null,"서울답십리초통학구역",149.2,2030,[173.8,156.8,150.5,149.2,154.0,153.2,188.2]],["B000002342","서울은천초등학교","안전",null,null,null,null,"서울은천초통학구역",77.1,2031,[98.8,85.8,84.2,89.5,77.1,78.2,92.6]],["B000025000","서울자곡초등학교","고위험",null,2029,37.472292,127.099627,"서울자곡초통학구역",32.7,2030,[46.8,40.4,34.0,32.7,34.9,34.5,40.3]],["B000002341","서울구암초등학교","안전",null,null,null,null,"서울구암초통학구역",127.7,2031,[157.2,153.9,141.5,138.6,127.7,137.6,168.0]],["B000002117","서울한남초등학교","안전",null,null,null,null,"서울한남초통학구역",80.8,2031,[87.5,94.8,81.9,86.0,80.8,87.5,93.8]],["B000002335","서울봉천초등학교","안전",null,null,null,null,"서울봉천초통학구역",113.4,2027,[113.4,131.0,120.0,133.5,127.2,142.1,157.5]],["B000002212","서울장수초등학교","안전",null,null,null,null,"서울장수초통학구역",61.6,2031,[78.2,74.2,74.0,67.6,61.6,66.1,67.2]],["B000002088","서울명신초등학교","안전",null,null,null,null,"서울명신초통학구역",72.8,2031,[89.5,84.7,82.9,80.7,72.8,101.5,108.9]],["B000002255","서울서원초등학교","안전",null,null,null,null,"서울서원초통학구역",125.4,2033,[288.9,235.7,200.8,152.4,132.5,128.0,125.4]],["B000002119","서울삼광초등학교","고위험",null,2026,37.547299,126.976526,"서울삼광초통학구역",30.3,2029,[35.5,32.4,30.3,35.2,33.9,31.3,48.6]],["B000001964","서울세곡초등학교","안전",null,null,null,null,"서울세곡초통학구역",47.1,2026,[47.1,51.2,55.7,54.1,51.0,53.5,61.6]],["B000002140","서울영풍초등학교","안전",null,null,null,null,"서울영풍초통학구역",134.3,2029,[164.9,145.9,134.3,135.6,135.0,141.7,163.4]],["B000002013","서울대방초등학교","안전",null,null,null,null,"서울대방초통학구역",180.5,2028,[197.9,180.5,214.0,208.6,201.3,217.2,253.0]],["B000001949","서울상지초등학교","고위험",null,2027,37.579783,126.882212,"서울상지초통학구역",22.0,2033,[36.5,30.4,36.3,32.6,30.8,26.1,22.0]],["B000002242","서울염동초등학교","안전",null,null,null,null,"서울염동초통학구역",85.8,2030,[112.4,103.0,102.3,85.8,104.8,110.6,113.1]],["B000002129","서울가원초등학교","안전",null,null,null,null,"서울가원초통학구역",51.2,2029,[52.3,58.2,51.2,67.3,61.4,58.9,77.3]],["B000002257","서울잠원초등학교","안전",null,null,null,null,"서울잠원초통학구역",197.2,2033,[382.2,299.2,329.4,241.3,225.4,215.7,197.2]],["B000002213","서울양동초등학교","안전",null,null,null,null,"서울양동초통학구역",53.7,2031,[73.7,64.1,66.9,58.3,53.7,62.1,76.6]],["B000002284","서울도곡초등학교","안전",null,null,null,null,"서울도곡초통학구역",59.0,2030,[138.2,92.9,77.6,59.0,66.8,64.0,82.0]],["B000002149","서울송파초등학교","안전",null,null,null,null,"서울송파초통학구역",74.6,2029,[81.9,94.0,74.6,81.7,89.7,102.1,111.4]],["B000002071","서울중원초등학교","안전",null,null,null,null,"서울중원초통학구역",60.9,2028,[72.9,60.9,68.1,64.5,68.4,63.9,82.4]],["B000002382","서울중마초등학교","안전",null,null,null,null,"서울중마초통학구역",45.0,2032,[45.3,55.0,48.9,48.0,49.1,45.0,62.1]],["B000001995","서울영원초등학교","안전",null,null,null,null,"서울영원초통학구역",82.9,2028,[98.1,82.9,89.5,99.8,97.2,107.1,126.0]],["B000002365","서울행현초등학교","안전",null,null,null,null,"서울행현초통학구역",107.2,2028,[118.3,107.2,110.4,115.2,110.2,110.0,141.7]],["B000002398","서울월곡초등학교","안전",null,null,null,null,"서울월곡초통학구역",46.5,2030,[58.9,56.0,56.5,46.5,47.6,57.6,59.9]],["B000002401","서울개운초등학교","안전",null,null,null,null,"서울개운초통학구역",109.6,2030,[132.2,124.8,132.4,109.6,120.5,117.4,113.7]],["B000001931","서울창천초등학교","고위험",null,2028,37.554999,126.939715,"서울창천초통학구역",36.9,2031,[41.3,37.0,41.7,49.3,36.9,41.1,52.3]],["B000001980","서울문백초등학교","안전",null,null,null,null,"서울문백초통학구역",45.7,2028,[72.5,45.7,54.0,57.6,50.2,55.5,68.0]],["B000002134","서울잠동초등학교","안전",null,null,null,null,"서울잠동초통학구역",86.9,2032,[168.4,118.8,110.6,90.7,106.7,86.9,98.7]],["B000002316","서울대림초등학교","안전",null,null,null,null,"서울대림초통학구역",144.3,2031,[179.1,168.3,156.8,150.6,144.3,154.5,184.4]],["B000002406","서울장곡초등학교","안전",null,null,null,null,"서울장곡초통학구역",150.2,2031,[193.2,175.0,173.8,163.6,150.2,168.4,162.1]],["B000002397","서울장월초등학교","안전",null,null,null,null,"서울장월초통학구역",154.1,2031,[203.7,179.3,171.6,175.0,154.1,160.0,163.1]],["B000002377","서울신자초등학교","안전",null,null,null,null,"서울신자초통학구역",58.4,2028,[68.8,58.4,68.6,61.9,66.0,72.4,70.5]],["B000001923","서울안산초등학교","안전",null,null,null,null,"서울안산초통학구역",121.2,2029,[125.0,124.8,121.2,128.6,138.3,126.6,152.0]],["B000002015","서울당산초등학교","안전",null,null,null,null,"서울당산초통학구역",66.8,2029,[77.8,75.4,66.8,77.1,85.8,89.8,116.9]],["B000002278","서울대모초등학교","안전",null,null,null,null,"서울대모초통학구역",59.7,2030,[121.1,74.7,94.2,59.7,63.7,60.8,81.4]],["B000002072","서울청계초등학교","고위험",null,2026,37.645059,127.066115,"서울청계초통학구역",39.4,2032,[48.9,40.8,43.7,40.8,43.8,39.4,49.9]],["B000002303","서울청담초등학교","안전",null,null,null,null,"서울청담초통학구역",68.1,2033,[106.9,97.6,87.8,82.6,72.6,76.3,68.1]],["B000002025","서울신방학초등학교","고위험",null,2027,37.666088,127.029147,"서울신방학초통학구역",27.9,2031,[38.7,43.1,35.0,30.1,27.9,28.8,28.2]],["B000001900","서울상신초등학교","안전",null,null,null,null,"서울상신초통학구역",93.9,2030,[118.8,102.8,104.5,93.9,102.7,107.8,110.5]],["B000002425","서울미양초등학교","안전",null,null,null,null,"서울미양초통학구역",58.0,2033,[69.4,71.2,67.1,64.4,65.7,61.2,58.0]],["B000001898","서울신사초등학교","안전",null,null,null,null,"서울신사초통학구역",54.8,2029,[61.9,56.9,54.8,55.8,54.8,57.6,58.6]],["B000001966","서울신구로초등학교","안전",null,null,null,null,"서울신구로초통학구역",70.8,2028,[90.3,70.8,81.6,83.7,90.5,105.2,106.3]],["B000002418","서울번동초등학교","안전",null,null,null,null,"서울번동초통학구역",51.6,2030,[71.0,64.0,63.4,51.6,67.8,60.4,65.7]],["B000002210","서울신목초등학교","고위험",null,2032,37.517233,126.872654,"서울신목초통학구역",38.2,2032,[95.9,65.0,63.2,44.8,40.4,38.2,38.7]],["B000002091","서울세검정초등학교","폐교위험",2032,2026,37.603096,126.96117,"서울세검정초통학구역",33.0,2032,[48.3,47.2,47.1,38.0,39.6,33.0,36.2]],["B000002102","서울흥인초등학교","안전",null,null,null,null,"서울흥인초통학구역",88.9,2031,[110.5,95.9,97.9,104.1,88.9,103.5,119.2]],["B000002221","서울등양초등학교","고위험",null,2026,37.565036,126.844747,"서울등양초통학구역",32.6,2028,[39.2,32.6,38.3,38.3,33.8,36.0,45.4]],["B000002404","서울성북초등학교","고위험",null,2026,37.593894,126.998111,"서울성북초통학구역",26.0,2030,[30.0,33.9,29.6,26.0,27.5,28.7,32.1]],["B000002246","서울등서초등학교","안전",null,null,null,null,"서울등서초통학구역",62.4,2031,[96.7,104.7,123.9,93.7,62.4,79.7,95.4]],["B000002155","서울토성초등학교","안전",null,null,null,null,"서울토성초통학구역",40.9,2030,[55.0,43.4,47.8,40.9,40.9,48.9,53.0]],["B000001872","서울신묵초등학교","고위험",null,2026,37.607111,127.075349,"서울신묵초통학구역",30.4,2028,[35.6,30.4,35.4,40.0,31.0,34.9,37.8]]],"risk":{"2027":{"B000002266":{"g":"고위험"},"B000002271":{"g":"고위험"},"B000002172":{"g":"폐교위험"},"B000025614":{"g":"폐교위험"},"B000001983":{"g":"고위험","yi":0.315,"ci":0.233,"oi":1.195,"mi":0.365,"di":1.645,"yc":0,"cc":3,"oc":7,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"다문화"},"B000002086":{"g":"폐교위험"},"B000001896":{"g":"폐교위험","yi":0.519,"ci":0.43,"oi":1.883,"mi":0.246,"di":2.802,"yc":0,"cc":3,"oc":9,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002083":{"g":"고위험"},"B000002386":{"g":"고위험"},"B000002084":{"g":"고위험"},"B000001886":{"g":"고위험"},"B000002106":{"g":"폐교위험"},"B000002249":{"g":"고위험"},"B000002325":{"g":"폐교위험","yi":0.508,"ci":1.055,"oi":1.346,"mi":0.171,"di":2.612,"yc":0,"cc":1,"oc":11,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000001953":{"g":"폐교위험","yi":0.035,"ci":0.119,"oi":1.28,"mi":0.111,"di":0.186,"yc":2,"cc":2,"oc":4,"mc":1,"dc":3,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002081":{"g":"고위험"},"B000002369":{"g":"고위험","yi":1.918,"ci":5.068,"oi":0.514,"mi":0.162,"di":1.361,"yc":0,"cc":1,"oc":21,"mc":0,"dc":0,"cl":2,"cn":"청소년 시설 중심 수요군","r1":"청소년","r2":"유아","r3":"장애인"},"B000002160":{"g":"고위험"},"B000001993":{"g":"고위험"},"B000001891":{"g":"고위험"},"B000002331":{"g":"고위험"},"B000001885":{"g":"폐교위험"},"B000002329":{"g":"고위험"},"B000002080":{"g":"폐교위험"},"B000002176":{"g":"고위험"},"B000002085":{"g":"폐교위험","yi":0.103,"ci":0.551,"oi":0.526,"mi":0.041,"di":0.327,"yc":0,"cc":0,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"청소년","r2":"노인","r3":"장애인"},"B000002082":{"g":"폐교위험"},"B000002362":{"g":"폐교위험","yi":0.151,"ci":0.511,"oi":1.169,"mi":0.162,"di":1.178,"yc":1,"cc":1,"oc":5,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000001929":{"g":"고위험"},"B000001853":{"g":"고위험"},"B000001893":{"g":"고위험","yi":0.519,"ci":0.43,"oi":1.883,"mi":0.246,"di":2.802,"yc":0,"cc":3,"oc":9,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002247":{"g":"고위험"},"B000002022":{"g":"고위험"},"B000002104":{"g":"폐교위험","yi":0.083,"ci":0.557,"oi":0.566,"mi":0.038,"di":0.352,"yc":0,"cc":0,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"청소년","r3":"장애인"},"B000001881":{"g":"고위험"},"B000001922":{"g":"고위험"},"B000002416":{"g":"고위험"},"B000002357":{"g":"폐교위험"},"B000001895":{"g":"고위험"},"B000001909":{"g":"고위험"},"B000002276":{"g":"고위험"},"B000002299":{"g":"고위험","yi":0.419,"ci":0.908,"oi":1.797,"mi":0.111,"di":1.043,"yc":0,"cc":1,"oc":5,"mc":0,"dc":1,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002366":{"g":"폐교위험"},"B000001969":{"g":"고위험"},"B000002111":{"g":"고위험"},"B000002062":{"g":"고위험"},"B000001877":{"g":"고위험"},"B000002100":{"g":"고위험"},"B000002379":{"g":"고위험"},"B000002112":{"g":"폐교위험","yi":0.246,"ci":0.427,"oi":1.072,"mi":0.167,"di":0.605,"yc":0,"cc":1,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000001914":{"g":"고위험"},"B000002251":{"g":"고위험"},"B000001940":{"g":"고위험"},"B000002272":{"g":"고위험"},"B000001887":{"g":"고위험"},"B000002094":{"g":"폐교위험"},"B000002114":{"g":"폐교위험","yi":0.171,"ci":0.736,"oi":1.688,"mi":0.137,"di":0.838,"yc":0,"cc":0,"oc":3,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002093":{"g":"폐교위험","yi":0.117,"ci":0.11,"oi":0.447,"mi":0.041,"di":0.236,"yc":0,"cc":2,"oc":6,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"유아"},"B000002096":{"g":"폐교위험"},"B000002360":{"g":"고위험"},"B000002240":{"g":"고위험"},"B000002226":{"g":"고위험"},"B000001908":{"g":"고위험"},"B000001884":{"g":"고위험","yi":2.391,"ci":2.173,"oi":0.539,"mi":0.327,"di":3.726,"yc":0,"cc":3,"oc":45,"mc":0,"dc":0,"cl":2,"cn":"청소년 시설 중심 수요군","r1":"장애인","r2":"유아","r3":"청소년"},"B000002430":{"g":"고위험"},"B000002049":{"g":"폐교위험"},"B000002373":{"g":"고위험"},"B000002087":{"g":"고위험"},"B000001857":{"g":"고위험"},"B000001958":{"g":"고위험"},"B000001982":{"g":"고위험"},"B000001990":{"g":"고위험","yi":0.264,"ci":0.291,"oi":1.336,"mi":0.156,"di":0.523,"yc":0,"cc":2,"oc":5,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000001952":{"g":"고위험"},"B000002326":{"g":"고위험"},"B000002008":{"g":"고위험"},"B000001999":{"g":"고위험"},"B000001912":{"g":"고위험"},"B000002000":{"g":"고위험"},"B000001849":{"g":"고위험"},"B000002113":{"g":"고위험"},"B000001988":{"g":"고위험"},"B000002277":{"g":"고위험"},"B000001926":{"g":"고위험"},"B000002067":{"g":"고위험"},"B000001899":{"g":"고위험"},"B000001986":{"g":"고위험"},"B000001862":{"g":"고위험","yi":0.381,"ci":0.797,"oi":1.643,"mi":0.212,"di":1.789,"yc":0,"cc":1,"oc":6,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000002105":{"g":"폐교위험"},"B000002300":{"g":"고위험"},"B000002005":{"g":"폐교위험","yi":0.744,"ci":0.514,"oi":0.801,"mi":0.68,"di":2.392,"yc":0,"cc":2,"oc":16,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002327":{"g":"고위험"},"B000001880":{"g":"고위험"},"B000002023":{"g":"고위험"},"B000002040":{"g":"고위험"},"B000002289":{"g":"고위험"},"B000001856":{"g":"고위험"},"B000001937":{"g":"고위험"},"B000001998":{"g":"고위험"},"B000001854":{"g":"고위험"},"B000002095":{"g":"고위험"},"B000002336":{"g":"고위험"},"B000001984":{"g":"고위험"},"B000002068":{"g":"고위험"},"B000002202":{"g":"폐교위험","yi":0.458,"ci":0.165,"oi":1.433,"mi":0.177,"di":0.983,"yc":0,"cc":5,"oc":6,"mc":0,"dc":1,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"유아"},"B000001987":{"g":"고위험"},"B000002119":{"g":"고위험"},"B000001949":{"g":"고위험"},"B000002072":{"g":"고위험"},"B000001951":{"g":"고위험"},"B000002025":{"g":"고위험"},"B000002091":{"g":"고위험"},"B000002221":{"g":"고위험"},"B000002404":{"g":"고위험"},"B000002388":{"g":"고위험"},"B000001872":{"g":"고위험"}},"2028":{"B000002266":{"g":"고위험"},"B000002271":{"g":"고위험"},"B000002172":{"g":"폐교위험"},"B000025614":{"g":"폐교위험"},"B000001983":{"g":"고위험","yi":0.315,"ci":0.233,"oi":1.195,"mi":0.365,"di":1.645,"yc":0,"cc":3,"oc":7,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"다문화"},"B000002086":{"g":"폐교위험"},"B000001896":{"g":"폐교위험","yi":0.519,"ci":0.43,"oi":1.883,"mi":0.246,"di":2.802,"yc":0,"cc":3,"oc":9,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002083":{"g":"고위험"},"B000002197":{"g":"고위험"},"B000002386":{"g":"고위험"},"B000002084":{"g":"고위험"},"B000001978":{"g":"고위험"},"B000001886":{"g":"고위험"},"B000002106":{"g":"폐교위험"},"B000002249":{"g":"고위험"},"B000002325":{"g":"폐교위험","yi":0.508,"ci":1.055,"oi":1.346,"mi":0.171,"di":2.612,"yc":0,"cc":1,"oc":11,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000001953":{"g":"폐교위험","yi":0.035,"ci":0.119,"oi":1.28,"mi":0.111,"di":0.186,"yc":2,"cc":2,"oc":4,"mc":1,"dc":3,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002081":{"g":"고위험"},"B000002369":{"g":"고위험","yi":1.918,"ci":5.068,"oi":0.514,"mi":0.162,"di":1.361,"yc":0,"cc":1,"oc":21,"mc":0,"dc":0,"cl":2,"cn":"청소년 시설 중심 수요군","r1":"청소년","r2":"유아","r3":"장애인"},"B000002160":{"g":"고위험"},"B000001935":{"g":"고위험"},"B000001993":{"g":"고위험"},"B000001891":{"g":"고위험"},"B000002331":{"g":"고위험"},"B000001885":{"g":"폐교위험"},"B000002329":{"g":"고위험"},"B000002080":{"g":"폐교위험"},"B000002176":{"g":"고위험"},"B000002085":{"g":"폐교위험","yi":0.103,"ci":0.551,"oi":0.526,"mi":0.041,"di":0.327,"yc":0,"cc":0,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"청소년","r2":"노인","r3":"장애인"},"B000002082":{"g":"폐교위험"},"B000002362":{"g":"폐교위험","yi":0.151,"ci":0.511,"oi":1.169,"mi":0.162,"di":1.178,"yc":1,"cc":1,"oc":5,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000001929":{"g":"고위험"},"B000001853":{"g":"고위험"},"B000001893":{"g":"고위험","yi":0.519,"ci":0.43,"oi":1.883,"mi":0.246,"di":2.802,"yc":0,"cc":3,"oc":9,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002247":{"g":"고위험"},"B000002022":{"g":"고위험"},"B000002104":{"g":"폐교위험","yi":0.083,"ci":0.557,"oi":0.566,"mi":0.038,"di":0.352,"yc":0,"cc":0,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"청소년","r3":"장애인"},"B000001881":{"g":"고위험"},"B000001922":{"g":"고위험"},"B000002416":{"g":"고위험"},"B000002122":{"g":"고위험"},"B000002357":{"g":"폐교위험"},"B000001895":{"g":"고위험"},"B000001909":{"g":"고위험"},"B000002276":{"g":"고위험"},"B000002299":{"g":"고위험","yi":0.419,"ci":0.908,"oi":1.797,"mi":0.111,"di":1.043,"yc":0,"cc":1,"oc":5,"mc":0,"dc":1,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002366":{"g":"폐교위험"},"B000001992":{"g":"고위험"},"B000002187":{"g":"고위험"},"B000001969":{"g":"고위험"},"B000002111":{"g":"고위험"},"B000002062":{"g":"고위험"},"B000001877":{"g":"고위험"},"B000002100":{"g":"고위험"},"B000002379":{"g":"고위험"},"B000002112":{"g":"폐교위험","yi":0.246,"ci":0.427,"oi":1.072,"mi":0.167,"di":0.605,"yc":0,"cc":1,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000001914":{"g":"고위험"},"B000002251":{"g":"고위험"},"B000001940":{"g":"고위험"},"B000002272":{"g":"고위험"},"B000001887":{"g":"고위험"},"B000002094":{"g":"폐교위험"},"B000001977":{"g":"고위험"},"B000002114":{"g":"폐교위험","yi":0.171,"ci":0.736,"oi":1.688,"mi":0.137,"di":0.838,"yc":0,"cc":0,"oc":3,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002093":{"g":"폐교위험","yi":0.117,"ci":0.11,"oi":0.447,"mi":0.041,"di":0.236,"yc":0,"cc":2,"oc":6,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"유아"},"B000002096":{"g":"폐교위험"},"B000002360":{"g":"고위험"},"B000002240":{"g":"고위험"},"B000002226":{"g":"고위험"},"B000001908":{"g":"고위험"},"B000001884":{"g":"고위험","yi":2.391,"ci":2.173,"oi":0.539,"mi":0.327,"di":3.726,"yc":0,"cc":3,"oc":45,"mc":0,"dc":0,"cl":2,"cn":"청소년 시설 중심 수요군","r1":"장애인","r2":"유아","r3":"청소년"},"B000002430":{"g":"고위험"},"B000002334":{"g":"고위험"},"B000002049":{"g":"폐교위험"},"B000002373":{"g":"고위험"},"B000002036":{"g":"고위험"},"B000002087":{"g":"고위험"},"B000001857":{"g":"고위험"},"B000001958":{"g":"고위험"},"B000001982":{"g":"고위험"},"B000001990":{"g":"폐교위험","yi":0.264,"ci":0.291,"oi":1.336,"mi":0.156,"di":0.523,"yc":0,"cc":2,"oc":5,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000001952":{"g":"고위험"},"B000002326":{"g":"고위험"},"B000002008":{"g":"고위험"},"B000002110":{"g":"고위험"},"B000001999":{"g":"고위험"},"B000001912":{"g":"고위험"},"B000002000":{"g":"고위험"},"B000001849":{"g":"고위험"},"B000002113":{"g":"고위험"},"B000002046":{"g":"고위험","yi":0.791,"ci":1.287,"oi":0.407,"mi":0.124,"di":0.664,"yc":0,"cc":3,"oc":17,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"청소년","r2":"유아","r3":"장애인"},"B000001988":{"g":"고위험"},"B000002277":{"g":"고위험"},"B000001926":{"g":"고위험"},"B000002067":{"g":"고위험"},"B000001899":{"g":"고위험"},"B000001986":{"g":"고위험"},"B000001862":{"g":"폐교위험","yi":0.381,"ci":0.797,"oi":1.643,"mi":0.212,"di":1.789,"yc":0,"cc":1,"oc":6,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000002105":{"g":"폐교위험"},"B000002300":{"g":"고위험"},"B000002005":{"g":"폐교위험","yi":0.744,"ci":0.514,"oi":0.801,"mi":0.68,"di":2.392,"yc":0,"cc":2,"oc":16,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002327":{"g":"고위험"},"B000002145":{"g":"고위험"},"B000001989":{"g":"고위험"},"B000001880":{"g":"고위험"},"B000002023":{"g":"고위험"},"B000002040":{"g":"고위험"},"B000002289":{"g":"고위험"},"B000001856":{"g":"고위험"},"B000001937":{"g":"고위험"},"B000001998":{"g":"고위험"},"B000001854":{"g":"고위험"},"B000002095":{"g":"고위험"},"B000002336":{"g":"고위험"},"B000001984":{"g":"고위험"},"B000002068":{"g":"고위험"},"B000002202":{"g":"폐교위험","yi":0.458,"ci":0.165,"oi":1.433,"mi":0.177,"di":0.983,"yc":0,"cc":5,"oc":6,"mc":0,"dc":1,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"유아"},"B000001987":{"g":"고위험"},"B000002330":{"g":"고위험"},"B000002119":{"g":"고위험"},"B000001949":{"g":"고위험"},"B000001931":{"g":"고위험"},"B000002072":{"g":"고위험"},"B000001951":{"g":"고위험"},"B000002025":{"g":"고위험"},"B000002091":{"g":"고위험"},"B000002221":{"g":"고위험"},"B000002404":{"g":"고위험"},"B000002388":{"g":"고위험"},"B000001872":{"g":"고위험"}},"2029":{"B000002266":{"g":"고위험"},"B000002271":{"g":"고위험"},"B000002172":{"g":"폐교위험"},"B000025614":{"g":"폐교위험"},"B000001983":{"g":"고위험","yi":0.315,"ci":0.233,"oi":1.195,"mi":0.365,"di":1.645,"yc":0,"cc":3,"oc":7,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"다문화"},"B000002086":{"g":"폐교위험"},"B000001896":{"g":"폐교위험","yi":0.519,"ci":0.43,"oi":1.883,"mi":0.246,"di":2.802,"yc":0,"cc":3,"oc":9,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002083":{"g":"고위험"},"B000002197":{"g":"고위험"},"B000002386":{"g":"고위험"},"B000002084":{"g":"고위험"},"B000001978":{"g":"고위험"},"B000001886":{"g":"고위험"},"B000002106":{"g":"폐교위험"},"B000002249":{"g":"고위험"},"B000002325":{"g":"폐교위험","yi":0.508,"ci":1.055,"oi":1.346,"mi":0.171,"di":2.612,"yc":0,"cc":1,"oc":11,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000001953":{"g":"폐교위험","yi":0.035,"ci":0.119,"oi":1.28,"mi":0.111,"di":0.186,"yc":2,"cc":2,"oc":4,"mc":1,"dc":3,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002081":{"g":"고위험"},"B000002369":{"g":"고위험","yi":1.918,"ci":5.068,"oi":0.514,"mi":0.162,"di":1.361,"yc":0,"cc":1,"oc":21,"mc":0,"dc":0,"cl":2,"cn":"청소년 시설 중심 수요군","r1":"청소년","r2":"유아","r3":"장애인"},"B000002160":{"g":"고위험"},"B000001935":{"g":"고위험"},"B000001993":{"g":"고위험"},"B000001891":{"g":"고위험"},"B000002331":{"g":"고위험"},"B000001885":{"g":"폐교위험"},"B000002329":{"g":"고위험"},"B000002080":{"g":"폐교위험"},"B000002176":{"g":"고위험"},"B000002085":{"g":"폐교위험","yi":0.103,"ci":0.551,"oi":0.526,"mi":0.041,"di":0.327,"yc":0,"cc":0,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"청소년","r2":"노인","r3":"장애인"},"B000002082":{"g":"폐교위험"},"B000002362":{"g":"폐교위험","yi":0.151,"ci":0.511,"oi":1.169,"mi":0.162,"di":1.178,"yc":1,"cc":1,"oc":5,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000001929":{"g":"고위험"},"B000001853":{"g":"고위험"},"B000001893":{"g":"고위험","yi":0.519,"ci":0.43,"oi":1.883,"mi":0.246,"di":2.802,"yc":0,"cc":3,"oc":9,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002247":{"g":"고위험"},"B000002022":{"g":"고위험"},"B000002104":{"g":"폐교위험","yi":0.083,"ci":0.557,"oi":0.566,"mi":0.038,"di":0.352,"yc":0,"cc":0,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"청소년","r3":"장애인"},"B000001881":{"g":"고위험"},"B000001922":{"g":"고위험"},"B000002355":{"g":"고위험"},"B000002416":{"g":"고위험"},"B000002122":{"g":"고위험"},"B000002357":{"g":"폐교위험"},"B000001895":{"g":"고위험"},"B000001909":{"g":"고위험"},"B000002276":{"g":"고위험"},"B000002299":{"g":"폐교위험","yi":0.419,"ci":0.908,"oi":1.797,"mi":0.111,"di":1.043,"yc":0,"cc":1,"oc":5,"mc":0,"dc":1,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002366":{"g":"폐교위험"},"B000001992":{"g":"고위험"},"B000002187":{"g":"고위험"},"B000001938":{"g":"고위험"},"B000001969":{"g":"고위험"},"B000002111":{"g":"고위험"},"B000002062":{"g":"고위험"},"B000001877":{"g":"고위험"},"B000002100":{"g":"고위험"},"B000002379":{"g":"고위험"},"B000002112":{"g":"폐교위험","yi":0.246,"ci":0.427,"oi":1.072,"mi":0.167,"di":0.605,"yc":0,"cc":1,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000001914":{"g":"고위험"},"B000002251":{"g":"고위험"},"B000001940":{"g":"고위험"},"B000002272":{"g":"고위험"},"B000001887":{"g":"고위험"},"B000002094":{"g":"폐교위험"},"B000001977":{"g":"고위험"},"B000002114":{"g":"폐교위험","yi":0.171,"ci":0.736,"oi":1.688,"mi":0.137,"di":0.838,"yc":0,"cc":0,"oc":3,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002093":{"g":"폐교위험","yi":0.117,"ci":0.11,"oi":0.447,"mi":0.041,"di":0.236,"yc":0,"cc":2,"oc":6,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"유아"},"B000002096":{"g":"폐교위험"},"B000002045":{"g":"고위험"},"B000002360":{"g":"고위험"},"B000002240":{"g":"고위험"},"B000002226":{"g":"고위험"},"B000001908":{"g":"고위험"},"B000001884":{"g":"고위험","yi":2.391,"ci":2.173,"oi":0.539,"mi":0.327,"di":3.726,"yc":0,"cc":3,"oc":45,"mc":0,"dc":0,"cl":2,"cn":"청소년 시설 중심 수요군","r1":"장애인","r2":"유아","r3":"청소년"},"B000002430":{"g":"고위험"},"B000002334":{"g":"고위험"},"B000002049":{"g":"폐교위험"},"B000002373":{"g":"고위험"},"B000002227":{"g":"고위험"},"B000002036":{"g":"고위험"},"B000002053":{"g":"고위험"},"B000002087":{"g":"고위험"},"B000001857":{"g":"고위험"},"B000001958":{"g":"고위험"},"B000001982":{"g":"고위험"},"B000001990":{"g":"폐교위험","yi":0.264,"ci":0.291,"oi":1.336,"mi":0.156,"di":0.523,"yc":0,"cc":2,"oc":5,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000001952":{"g":"고위험"},"B000002326":{"g":"고위험"},"B000002008":{"g":"고위험"},"B000002110":{"g":"고위험"},"B000001999":{"g":"고위험"},"B000001912":{"g":"고위험"},"B000002000":{"g":"고위험"},"B000001849":{"g":"고위험"},"B000002113":{"g":"고위험"},"B000002046":{"g":"고위험","yi":0.791,"ci":1.287,"oi":0.407,"mi":0.124,"di":0.664,"yc":0,"cc":3,"oc":17,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"청소년","r2":"유아","r3":"장애인"},"B000001988":{"g":"고위험"},"B000002277":{"g":"고위험"},"B000001926":{"g":"고위험"},"B000002067":{"g":"고위험"},"B000001899":{"g":"고위험"},"B000001986":{"g":"고위험"},"B000001862":{"g":"폐교위험","yi":0.381,"ci":0.797,"oi":1.643,"mi":0.212,"di":1.789,"yc":0,"cc":1,"oc":6,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000002105":{"g":"폐교위험"},"B000001981":{"g":"고위험"},"B000002300":{"g":"고위험"},"B000002005":{"g":"폐교위험","yi":0.744,"ci":0.514,"oi":0.801,"mi":0.68,"di":2.392,"yc":0,"cc":2,"oc":16,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002327":{"g":"고위험"},"B000002145":{"g":"고위험"},"B000001989":{"g":"고위험"},"B000001880":{"g":"고위험"},"B000002023":{"g":"고위험"},"B000002040":{"g":"고위험"},"B000002289":{"g":"고위험"},"B000001968":{"g":"고위험"},"B000001856":{"g":"고위험"},"B000001937":{"g":"고위험"},"B000001998":{"g":"고위험"},"B000001854":{"g":"고위험"},"B000002095":{"g":"고위험"},"B000002336":{"g":"고위험"},"B000001984":{"g":"고위험"},"B000002068":{"g":"고위험"},"B000002202":{"g":"폐교위험","yi":0.458,"ci":0.165,"oi":1.433,"mi":0.177,"di":0.983,"yc":0,"cc":5,"oc":6,"mc":0,"dc":1,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"유아"},"B000001987":{"g":"고위험"},"B000002330":{"g":"고위험"},"B000025000":{"g":"고위험"},"B000002119":{"g":"고위험"},"B000001949":{"g":"고위험"},"B000001931":{"g":"고위험"},"B000002072":{"g":"고위험"},"B000001951":{"g":"고위험"},"B000002025":{"g":"고위험"},"B000002091":{"g":"고위험"},"B000002221":{"g":"고위험"},"B000002404":{"g":"고위험"},"B000002388":{"g":"고위험"},"B000001872":{"g":"고위험"}},"2030":{"B000002266":{"g":"고위험"},"B000002271":{"g":"고위험"},"B000002172":{"g":"폐교위험"},"B000025614":{"g":"폐교위험"},"B000001983":{"g":"고위험","yi":0.315,"ci":0.233,"oi":1.195,"mi":0.365,"di":1.645,"yc":0,"cc":3,"oc":7,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"다문화"},"B000002086":{"g":"폐교위험"},"B000001896":{"g":"폐교위험","yi":0.519,"ci":0.43,"oi":1.883,"mi":0.246,"di":2.802,"yc":0,"cc":3,"oc":9,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002083":{"g":"고위험"},"B000002039":{"g":"고위험"},"B000002197":{"g":"고위험"},"B000002386":{"g":"고위험"},"B000002084":{"g":"고위험"},"B000001978":{"g":"고위험"},"B000001886":{"g":"고위험"},"B000002106":{"g":"폐교위험"},"B000002249":{"g":"고위험"},"B000002325":{"g":"폐교위험","yi":0.508,"ci":1.055,"oi":1.346,"mi":0.171,"di":2.612,"yc":0,"cc":1,"oc":11,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000001953":{"g":"폐교위험","yi":0.035,"ci":0.119,"oi":1.28,"mi":0.111,"di":0.186,"yc":2,"cc":2,"oc":4,"mc":1,"dc":3,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002081":{"g":"고위험"},"B000002369":{"g":"고위험","yi":1.918,"ci":5.068,"oi":0.514,"mi":0.162,"di":1.361,"yc":0,"cc":1,"oc":21,"mc":0,"dc":0,"cl":2,"cn":"청소년 시설 중심 수요군","r1":"청소년","r2":"유아","r3":"장애인"},"B000002160":{"g":"고위험"},"B000001935":{"g":"고위험"},"B000001993":{"g":"고위험"},"B000001891":{"g":"고위험"},"B000002331":{"g":"고위험"},"B000001885":{"g":"폐교위험"},"B000002329":{"g":"고위험"},"B000002080":{"g":"폐교위험"},"B000002176":{"g":"고위험"},"B000002085":{"g":"폐교위험","yi":0.103,"ci":0.551,"oi":0.526,"mi":0.041,"di":0.327,"yc":0,"cc":0,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"청소년","r2":"노인","r3":"장애인"},"B000002082":{"g":"폐교위험"},"B000002362":{"g":"폐교위험","yi":0.151,"ci":0.511,"oi":1.169,"mi":0.162,"di":1.178,"yc":1,"cc":1,"oc":5,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000002252":{"g":"고위험"},"B000001929":{"g":"고위험"},"B000001853":{"g":"고위험"},"B000001893":{"g":"폐교위험","yi":0.519,"ci":0.43,"oi":1.883,"mi":0.246,"di":2.802,"yc":0,"cc":3,"oc":9,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002247":{"g":"고위험"},"B000002022":{"g":"고위험"},"B000002104":{"g":"폐교위험","yi":0.083,"ci":0.557,"oi":0.566,"mi":0.038,"di":0.352,"yc":0,"cc":0,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"청소년","r3":"장애인"},"B000001881":{"g":"고위험"},"B000001922":{"g":"고위험"},"B000002355":{"g":"고위험"},"B000002416":{"g":"고위험"},"B000002122":{"g":"고위험"},"B000002357":{"g":"폐교위험"},"B000001895":{"g":"고위험"},"B000001909":{"g":"고위험"},"B000002276":{"g":"고위험"},"B000002299":{"g":"폐교위험","yi":0.419,"ci":0.908,"oi":1.797,"mi":0.111,"di":1.043,"yc":0,"cc":1,"oc":5,"mc":0,"dc":1,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002366":{"g":"폐교위험"},"B000001992":{"g":"고위험"},"B000002187":{"g":"고위험"},"B000001938":{"g":"고위험"},"B000001969":{"g":"고위험"},"B000002111":{"g":"고위험"},"B000002062":{"g":"고위험"},"B000001877":{"g":"고위험"},"B000002100":{"g":"고위험"},"B000002379":{"g":"고위험"},"B000002112":{"g":"폐교위험","yi":0.246,"ci":0.427,"oi":1.072,"mi":0.167,"di":0.605,"yc":0,"cc":1,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000001914":{"g":"고위험"},"B000002251":{"g":"고위험"},"B000001940":{"g":"고위험"},"B000002272":{"g":"고위험"},"B000001887":{"g":"고위험"},"B000002094":{"g":"폐교위험"},"B000001977":{"g":"고위험"},"B000002114":{"g":"폐교위험","yi":0.171,"ci":0.736,"oi":1.688,"mi":0.137,"di":0.838,"yc":0,"cc":0,"oc":3,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002093":{"g":"폐교위험","yi":0.117,"ci":0.11,"oi":0.447,"mi":0.041,"di":0.236,"yc":0,"cc":2,"oc":6,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"유아"},"B000002096":{"g":"폐교위험"},"B000002045":{"g":"고위험"},"B000002360":{"g":"고위험"},"B000002240":{"g":"고위험"},"B000002226":{"g":"고위험"},"B000001908":{"g":"고위험"},"B000001884":{"g":"고위험","yi":2.391,"ci":2.173,"oi":0.539,"mi":0.327,"di":3.726,"yc":0,"cc":3,"oc":45,"mc":0,"dc":0,"cl":2,"cn":"청소년 시설 중심 수요군","r1":"장애인","r2":"유아","r3":"청소년"},"B000002430":{"g":"고위험"},"B000002334":{"g":"고위험"},"B000002049":{"g":"폐교위험"},"B000002373":{"g":"고위험"},"B000002227":{"g":"고위험"},"B000002036":{"g":"고위험"},"B000002053":{"g":"고위험"},"B000002087":{"g":"고위험"},"B000002283":{"g":"고위험"},"B000001857":{"g":"고위험"},"B000001958":{"g":"고위험"},"B000001982":{"g":"고위험"},"B000001990":{"g":"폐교위험","yi":0.264,"ci":0.291,"oi":1.336,"mi":0.156,"di":0.523,"yc":0,"cc":2,"oc":5,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000001952":{"g":"고위험"},"B000002326":{"g":"고위험"},"B000002008":{"g":"고위험"},"B000002110":{"g":"고위험"},"B000001999":{"g":"고위험"},"B000001912":{"g":"고위험"},"B000002000":{"g":"고위험"},"B000001849":{"g":"고위험"},"B000002113":{"g":"고위험"},"B000002046":{"g":"고위험","yi":0.791,"ci":1.287,"oi":0.407,"mi":0.124,"di":0.664,"yc":0,"cc":3,"oc":17,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"청소년","r2":"유아","r3":"장애인"},"B000001988":{"g":"고위험"},"B000002277":{"g":"고위험"},"B000001926":{"g":"고위험"},"B000002067":{"g":"고위험"},"B000001899":{"g":"고위험"},"B000001986":{"g":"고위험"},"B000001862":{"g":"폐교위험","yi":0.381,"ci":0.797,"oi":1.643,"mi":0.212,"di":1.789,"yc":0,"cc":1,"oc":6,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000002105":{"g":"폐교위험"},"B000001981":{"g":"고위험"},"B000002300":{"g":"고위험"},"B000002005":{"g":"폐교위험","yi":0.744,"ci":0.514,"oi":0.801,"mi":0.68,"di":2.392,"yc":0,"cc":2,"oc":16,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002327":{"g":"고위험"},"B000002145":{"g":"고위험"},"B000001989":{"g":"고위험"},"B000001880":{"g":"고위험"},"B000002023":{"g":"고위험"},"B000002040":{"g":"고위험"},"B000002289":{"g":"고위험"},"B000001968":{"g":"고위험"},"B000001856":{"g":"고위험"},"B000001937":{"g":"고위험"},"B000001998":{"g":"고위험"},"B000001854":{"g":"고위험"},"B000002027":{"g":"고위험"},"B000002095":{"g":"고위험"},"B000002336":{"g":"고위험"},"B000001984":{"g":"고위험"},"B000002068":{"g":"고위험"},"B000002202":{"g":"폐교위험","yi":0.458,"ci":0.165,"oi":1.433,"mi":0.177,"di":0.983,"yc":0,"cc":5,"oc":6,"mc":0,"dc":1,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"유아"},"B000001987":{"g":"고위험"},"B000002298":{"g":"고위험"},"B000002344":{"g":"고위험"},"B000002330":{"g":"고위험"},"B000025000":{"g":"고위험"},"B000002119":{"g":"고위험"},"B000001949":{"g":"고위험"},"B000001931":{"g":"고위험"},"B000002072":{"g":"고위험"},"B000001951":{"g":"고위험"},"B000002025":{"g":"고위험"},"B000002091":{"g":"고위험"},"B000002221":{"g":"고위험"},"B000002404":{"g":"고위험"},"B000002388":{"g":"고위험"},"B000001872":{"g":"고위험"}},"2031":{"B000002266":{"g":"고위험"},"B000002271":{"g":"고위험"},"B000002172":{"g":"폐교위험"},"B000025614":{"g":"폐교위험"},"B000001983":{"g":"폐교위험","yi":0.315,"ci":0.233,"oi":1.195,"mi":0.365,"di":1.645,"yc":0,"cc":3,"oc":7,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"다문화"},"B000002086":{"g":"폐교위험"},"B000001896":{"g":"폐교위험","yi":0.519,"ci":0.43,"oi":1.883,"mi":0.246,"di":2.802,"yc":0,"cc":3,"oc":9,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002083":{"g":"고위험"},"B000002039":{"g":"고위험"},"B000002197":{"g":"고위험"},"B000002386":{"g":"고위험"},"B000002084":{"g":"고위험"},"B000002415":{"g":"고위험"},"B000001978":{"g":"고위험"},"B000001886":{"g":"고위험"},"B000002106":{"g":"폐교위험"},"B000002249":{"g":"고위험"},"B000002325":{"g":"폐교위험","yi":0.508,"ci":1.055,"oi":1.346,"mi":0.171,"di":2.612,"yc":0,"cc":1,"oc":11,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000001953":{"g":"폐교위험","yi":0.035,"ci":0.119,"oi":1.28,"mi":0.111,"di":0.186,"yc":2,"cc":2,"oc":4,"mc":1,"dc":3,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002081":{"g":"고위험"},"B000002369":{"g":"폐교위험","yi":1.918,"ci":5.068,"oi":0.514,"mi":0.162,"di":1.361,"yc":0,"cc":1,"oc":21,"mc":0,"dc":0,"cl":2,"cn":"청소년 시설 중심 수요군","r1":"청소년","r2":"유아","r3":"장애인"},"B000002160":{"g":"고위험"},"B000001935":{"g":"고위험"},"B000001993":{"g":"고위험"},"B000001891":{"g":"고위험"},"B000002331":{"g":"고위험"},"B000001885":{"g":"폐교위험"},"B000002329":{"g":"고위험"},"B000002080":{"g":"폐교위험"},"B000002176":{"g":"고위험"},"B000002085":{"g":"폐교위험","yi":0.103,"ci":0.551,"oi":0.526,"mi":0.041,"di":0.327,"yc":0,"cc":0,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"청소년","r2":"노인","r3":"장애인"},"B000002082":{"g":"폐교위험"},"B000002362":{"g":"폐교위험","yi":0.151,"ci":0.511,"oi":1.169,"mi":0.162,"di":1.178,"yc":1,"cc":1,"oc":5,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000002252":{"g":"고위험"},"B000002392":{"g":"고위험"},"B000001929":{"g":"고위험"},"B000001853":{"g":"고위험"},"B000001893":{"g":"폐교위험","yi":0.519,"ci":0.43,"oi":1.883,"mi":0.246,"di":2.802,"yc":0,"cc":3,"oc":9,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002247":{"g":"고위험"},"B000002022":{"g":"고위험"},"B000002104":{"g":"폐교위험","yi":0.083,"ci":0.557,"oi":0.566,"mi":0.038,"di":0.352,"yc":0,"cc":0,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"청소년","r3":"장애인"},"B000001881":{"g":"고위험"},"B000001922":{"g":"고위험"},"B000002355":{"g":"고위험"},"B000002416":{"g":"고위험"},"B000002122":{"g":"고위험"},"B000002357":{"g":"폐교위험"},"B000002393":{"g":"고위험"},"B000001895":{"g":"고위험"},"B000001909":{"g":"고위험"},"B000002276":{"g":"고위험"},"B000002299":{"g":"폐교위험","yi":0.419,"ci":0.908,"oi":1.797,"mi":0.111,"di":1.043,"yc":0,"cc":1,"oc":5,"mc":0,"dc":1,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002366":{"g":"폐교위험"},"B000001992":{"g":"고위험"},"B000002187":{"g":"고위험"},"B000001938":{"g":"고위험"},"B000001969":{"g":"고위험"},"B000002111":{"g":"고위험"},"B000002062":{"g":"고위험"},"B000001877":{"g":"고위험"},"B000002100":{"g":"고위험"},"B000002379":{"g":"고위험"},"B000002112":{"g":"폐교위험","yi":0.246,"ci":0.427,"oi":1.072,"mi":0.167,"di":0.605,"yc":0,"cc":1,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000001914":{"g":"고위험"},"B000002251":{"g":"고위험"},"B000001940":{"g":"고위험"},"B000002272":{"g":"고위험"},"B000001887":{"g":"고위험"},"B000002214":{"g":"고위험"},"B000002094":{"g":"폐교위험"},"B000001977":{"g":"고위험"},"B000002114":{"g":"폐교위험","yi":0.171,"ci":0.736,"oi":1.688,"mi":0.137,"di":0.838,"yc":0,"cc":0,"oc":3,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002093":{"g":"폐교위험","yi":0.117,"ci":0.11,"oi":0.447,"mi":0.041,"di":0.236,"yc":0,"cc":2,"oc":6,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"유아"},"B000002096":{"g":"폐교위험"},"B000002045":{"g":"고위험"},"B000002360":{"g":"고위험"},"B000002240":{"g":"고위험"},"B000002226":{"g":"고위험"},"B000001908":{"g":"고위험"},"B000001884":{"g":"고위험","yi":2.391,"ci":2.173,"oi":0.539,"mi":0.327,"di":3.726,"yc":0,"cc":3,"oc":45,"mc":0,"dc":0,"cl":2,"cn":"청소년 시설 중심 수요군","r1":"장애인","r2":"유아","r3":"청소년"},"B000002430":{"g":"고위험"},"B000002215":{"g":"고위험"},"B000002334":{"g":"고위험"},"B000002049":{"g":"폐교위험"},"B000002373":{"g":"고위험"},"B000002227":{"g":"고위험"},"B000002036":{"g":"고위험"},"B000002053":{"g":"고위험"},"B000002087":{"g":"고위험"},"B000002283":{"g":"고위험"},"B000001857":{"g":"고위험"},"B000001958":{"g":"고위험"},"B000002144":{"g":"고위험"},"B000001982":{"g":"고위험"},"B000001990":{"g":"폐교위험","yi":0.264,"ci":0.291,"oi":1.336,"mi":0.156,"di":0.523,"yc":0,"cc":2,"oc":5,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002070":{"g":"고위험"},"B000001952":{"g":"고위험"},"B000002326":{"g":"고위험"},"B000002008":{"g":"고위험"},"B000002110":{"g":"고위험"},"B000001999":{"g":"고위험"},"B000001912":{"g":"고위험"},"B000002000":{"g":"고위험"},"B000001849":{"g":"고위험"},"B000002113":{"g":"고위험"},"B000002046":{"g":"폐교위험","yi":0.791,"ci":1.287,"oi":0.407,"mi":0.124,"di":0.664,"yc":0,"cc":3,"oc":17,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"청소년","r2":"유아","r3":"장애인"},"B000001988":{"g":"고위험"},"B000002277":{"g":"고위험"},"B000001926":{"g":"고위험"},"B000002052":{"g":"고위험"},"B000002067":{"g":"고위험"},"B000001899":{"g":"고위험"},"B000001986":{"g":"고위험"},"B000001862":{"g":"폐교위험","yi":0.381,"ci":0.797,"oi":1.643,"mi":0.212,"di":1.789,"yc":0,"cc":1,"oc":6,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000002105":{"g":"폐교위험"},"B000001981":{"g":"고위험"},"B000002300":{"g":"고위험"},"B000002005":{"g":"폐교위험","yi":0.744,"ci":0.514,"oi":0.801,"mi":0.68,"di":2.392,"yc":0,"cc":2,"oc":16,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002188":{"g":"고위험"},"B000002327":{"g":"고위험"},"B000002145":{"g":"고위험"},"B000001989":{"g":"고위험"},"B000001880":{"g":"고위험"},"B000002023":{"g":"고위험"},"B000002040":{"g":"고위험"},"B000002289":{"g":"고위험"},"B000001968":{"g":"고위험"},"B000001856":{"g":"고위험"},"B000001937":{"g":"고위험"},"B000001998":{"g":"고위험"},"B000001854":{"g":"고위험"},"B000002027":{"g":"고위험"},"B000002095":{"g":"고위험"},"B000002336":{"g":"고위험"},"B000001984":{"g":"고위험"},"B000002068":{"g":"고위험"},"B000002202":{"g":"폐교위험","yi":0.458,"ci":0.165,"oi":1.433,"mi":0.177,"di":0.983,"yc":0,"cc":5,"oc":6,"mc":0,"dc":1,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"유아"},"B000001987":{"g":"고위험"},"B000002069":{"g":"고위험"},"B000002298":{"g":"고위험"},"B000002344":{"g":"고위험"},"B000002330":{"g":"고위험"},"B000025000":{"g":"고위험"},"B000002119":{"g":"고위험"},"B000001949":{"g":"고위험"},"B000001931":{"g":"고위험"},"B000002072":{"g":"고위험"},"B000001951":{"g":"고위험"},"B000002025":{"g":"고위험"},"B000002091":{"g":"고위험"},"B000002221":{"g":"고위험"},"B000002404":{"g":"고위험"},"B000002388":{"g":"고위험"},"B000001872":{"g":"고위험"}},"2032":{"B000002266":{"g":"고위험"},"B000002271":{"g":"고위험"},"B000002172":{"g":"폐교위험"},"B000025614":{"g":"폐교위험"},"B000001983":{"g":"폐교위험","yi":0.315,"ci":0.233,"oi":1.195,"mi":0.365,"di":1.645,"yc":0,"cc":3,"oc":7,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"다문화"},"B000002086":{"g":"폐교위험"},"B000001896":{"g":"폐교위험","yi":0.519,"ci":0.43,"oi":1.883,"mi":0.246,"di":2.802,"yc":0,"cc":3,"oc":9,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002083":{"g":"고위험"},"B000002039":{"g":"고위험"},"B000002197":{"g":"고위험"},"B000002386":{"g":"고위험"},"B000002084":{"g":"고위험"},"B000002415":{"g":"고위험"},"B000001978":{"g":"고위험"},"B000001886":{"g":"고위험"},"B000002106":{"g":"폐교위험"},"B000002249":{"g":"고위험"},"B000002325":{"g":"폐교위험","yi":0.508,"ci":1.055,"oi":1.346,"mi":0.171,"di":2.612,"yc":0,"cc":1,"oc":11,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000001953":{"g":"폐교위험","yi":0.035,"ci":0.119,"oi":1.28,"mi":0.111,"di":0.186,"yc":2,"cc":2,"oc":4,"mc":1,"dc":3,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002081":{"g":"고위험"},"B000002369":{"g":"폐교위험","yi":1.918,"ci":5.068,"oi":0.514,"mi":0.162,"di":1.361,"yc":0,"cc":1,"oc":21,"mc":0,"dc":0,"cl":2,"cn":"청소년 시설 중심 수요군","r1":"청소년","r2":"유아","r3":"장애인"},"B000002160":{"g":"고위험"},"B000001935":{"g":"고위험"},"B000001993":{"g":"고위험"},"B000001891":{"g":"고위험"},"B000002331":{"g":"고위험"},"B000001885":{"g":"폐교위험"},"B000002329":{"g":"고위험"},"B000002080":{"g":"폐교위험"},"B000002176":{"g":"고위험"},"B000002085":{"g":"폐교위험","yi":0.103,"ci":0.551,"oi":0.526,"mi":0.041,"di":0.327,"yc":0,"cc":0,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"청소년","r2":"노인","r3":"장애인"},"B000002082":{"g":"폐교위험"},"B000002362":{"g":"폐교위험","yi":0.151,"ci":0.511,"oi":1.169,"mi":0.162,"di":1.178,"yc":1,"cc":1,"oc":5,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000002252":{"g":"고위험"},"B000002392":{"g":"고위험"},"B000001929":{"g":"고위험"},"B000001853":{"g":"고위험"},"B000001893":{"g":"폐교위험","yi":0.519,"ci":0.43,"oi":1.883,"mi":0.246,"di":2.802,"yc":0,"cc":3,"oc":9,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002247":{"g":"고위험"},"B000002022":{"g":"고위험"},"B000002104":{"g":"폐교위험","yi":0.083,"ci":0.557,"oi":0.566,"mi":0.038,"di":0.352,"yc":0,"cc":0,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"청소년","r3":"장애인"},"B000001881":{"g":"고위험"},"B000001922":{"g":"고위험"},"B000002355":{"g":"고위험"},"B000002416":{"g":"고위험"},"B000002122":{"g":"고위험"},"B000002357":{"g":"폐교위험"},"B000002393":{"g":"고위험"},"B000001895":{"g":"고위험"},"B000001909":{"g":"고위험"},"B000002276":{"g":"고위험"},"B000002299":{"g":"폐교위험","yi":0.419,"ci":0.908,"oi":1.797,"mi":0.111,"di":1.043,"yc":0,"cc":1,"oc":5,"mc":0,"dc":1,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002366":{"g":"폐교위험"},"B000001992":{"g":"고위험"},"B000002187":{"g":"고위험"},"B000001938":{"g":"고위험"},"B000001969":{"g":"고위험"},"B000002111":{"g":"고위험"},"B000002062":{"g":"고위험"},"B000001877":{"g":"고위험"},"B000002100":{"g":"고위험"},"B000002379":{"g":"고위험"},"B000002112":{"g":"폐교위험","yi":0.246,"ci":0.427,"oi":1.072,"mi":0.167,"di":0.605,"yc":0,"cc":1,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000001914":{"g":"고위험"},"B000002251":{"g":"고위험"},"B000001940":{"g":"고위험"},"B000002272":{"g":"고위험"},"B000001887":{"g":"고위험"},"B000002214":{"g":"고위험"},"B000002094":{"g":"폐교위험"},"B000001977":{"g":"고위험"},"B000002114":{"g":"폐교위험","yi":0.171,"ci":0.736,"oi":1.688,"mi":0.137,"di":0.838,"yc":0,"cc":0,"oc":3,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002037":{"g":"고위험"},"B000002093":{"g":"폐교위험","yi":0.117,"ci":0.11,"oi":0.447,"mi":0.041,"di":0.236,"yc":0,"cc":2,"oc":6,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"유아"},"B000002096":{"g":"폐교위험"},"B000002045":{"g":"고위험"},"B000002360":{"g":"고위험"},"B000002240":{"g":"고위험"},"B000002226":{"g":"고위험"},"B000001908":{"g":"고위험"},"B000001884":{"g":"고위험","yi":2.391,"ci":2.173,"oi":0.539,"mi":0.327,"di":3.726,"yc":0,"cc":3,"oc":45,"mc":0,"dc":0,"cl":2,"cn":"청소년 시설 중심 수요군","r1":"장애인","r2":"유아","r3":"청소년"},"B000002430":{"g":"고위험"},"B000002215":{"g":"고위험"},"B000002334":{"g":"고위험"},"B000002049":{"g":"폐교위험"},"B000002373":{"g":"고위험"},"B000002227":{"g":"고위험"},"B000002036":{"g":"고위험"},"B000002053":{"g":"고위험"},"B000002087":{"g":"고위험"},"B000002283":{"g":"고위험"},"B000001857":{"g":"고위험"},"B000001958":{"g":"고위험"},"B000002144":{"g":"고위험"},"B000001982":{"g":"고위험"},"B000001990":{"g":"폐교위험","yi":0.264,"ci":0.291,"oi":1.336,"mi":0.156,"di":0.523,"yc":0,"cc":2,"oc":5,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002070":{"g":"고위험"},"B000001952":{"g":"고위험"},"B000002326":{"g":"고위험"},"B000002008":{"g":"고위험"},"B000002110":{"g":"고위험"},"B000001999":{"g":"고위험"},"B000001912":{"g":"고위험"},"B000002000":{"g":"고위험"},"B000001849":{"g":"고위험"},"B000002113":{"g":"고위험"},"B000002046":{"g":"폐교위험","yi":0.791,"ci":1.287,"oi":0.407,"mi":0.124,"di":0.664,"yc":0,"cc":3,"oc":17,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"청소년","r2":"유아","r3":"장애인"},"B000001988":{"g":"고위험"},"B000002277":{"g":"고위험"},"B000001926":{"g":"고위험"},"B000002052":{"g":"고위험"},"B000002067":{"g":"고위험"},"B000001899":{"g":"고위험"},"B000001986":{"g":"고위험"},"B000001862":{"g":"폐교위험","yi":0.381,"ci":0.797,"oi":1.643,"mi":0.212,"di":1.789,"yc":0,"cc":1,"oc":6,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000002105":{"g":"폐교위험"},"B000001981":{"g":"고위험"},"B000002300":{"g":"고위험"},"B000002005":{"g":"폐교위험","yi":0.744,"ci":0.514,"oi":0.801,"mi":0.68,"di":2.392,"yc":0,"cc":2,"oc":16,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002188":{"g":"고위험"},"B000002327":{"g":"고위험"},"B000002145":{"g":"고위험"},"B000001989":{"g":"고위험"},"B000001880":{"g":"고위험"},"B000002023":{"g":"고위험"},"B000002040":{"g":"고위험"},"B000002157":{"g":"고위험"},"B000002289":{"g":"고위험"},"B000002193":{"g":"고위험"},"B000001968":{"g":"고위험"},"B000001856":{"g":"고위험"},"B000001937":{"g":"고위험"},"B000001998":{"g":"고위험"},"B000001854":{"g":"고위험"},"B000002027":{"g":"고위험"},"B000002095":{"g":"폐교위험"},"B000002336":{"g":"고위험"},"B000001984":{"g":"고위험"},"B000002068":{"g":"고위험"},"B000002202":{"g":"폐교위험","yi":0.458,"ci":0.165,"oi":1.433,"mi":0.177,"di":0.983,"yc":0,"cc":5,"oc":6,"mc":0,"dc":1,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"유아"},"B000001987":{"g":"고위험"},"B000002069":{"g":"고위험"},"B000002298":{"g":"고위험"},"B000002344":{"g":"고위험"},"B000002330":{"g":"고위험"},"B000025000":{"g":"고위험"},"B000002119":{"g":"고위험"},"B000001949":{"g":"고위험"},"B000001931":{"g":"고위험"},"B000002072":{"g":"고위험"},"B000001951":{"g":"고위험"},"B000002025":{"g":"고위험"},"B000002210":{"g":"고위험"},"B000002091":{"g":"폐교위험"},"B000002221":{"g":"고위험"},"B000002404":{"g":"고위험"},"B000002388":{"g":"고위험"},"B000001872":{"g":"고위험"}},"2033":{"B000002266":{"g":"고위험"},"B000002271":{"g":"고위험"},"B000002172":{"g":"폐교위험"},"B000025614":{"g":"폐교위험"},"B000001983":{"g":"폐교위험","yi":0.315,"ci":0.233,"oi":1.195,"mi":0.365,"di":1.645,"yc":0,"cc":3,"oc":7,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"다문화"},"B000002086":{"g":"폐교위험"},"B000001896":{"g":"폐교위험","yi":0.519,"ci":0.43,"oi":1.883,"mi":0.246,"di":2.802,"yc":0,"cc":3,"oc":9,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002083":{"g":"고위험"},"B000002039":{"g":"고위험"},"B000002197":{"g":"고위험"},"B000002386":{"g":"고위험"},"B000002084":{"g":"고위험"},"B000002415":{"g":"고위험"},"B000001978":{"g":"고위험"},"B000001886":{"g":"고위험"},"B000002106":{"g":"폐교위험"},"B000002249":{"g":"고위험"},"B000002325":{"g":"폐교위험","yi":0.508,"ci":1.055,"oi":1.346,"mi":0.171,"di":2.612,"yc":0,"cc":1,"oc":11,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000001953":{"g":"폐교위험","yi":0.035,"ci":0.119,"oi":1.28,"mi":0.111,"di":0.186,"yc":2,"cc":2,"oc":4,"mc":1,"dc":3,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002081":{"g":"고위험"},"B000002369":{"g":"폐교위험","yi":1.918,"ci":5.068,"oi":0.514,"mi":0.162,"di":1.361,"yc":0,"cc":1,"oc":21,"mc":0,"dc":0,"cl":2,"cn":"청소년 시설 중심 수요군","r1":"청소년","r2":"유아","r3":"장애인"},"B000002160":{"g":"고위험"},"B000001935":{"g":"고위험"},"B000001993":{"g":"고위험"},"B000001974":{"g":"고위험"},"B000001891":{"g":"고위험"},"B000002331":{"g":"고위험"},"B000001885":{"g":"폐교위험"},"B000002329":{"g":"고위험"},"B000002080":{"g":"폐교위험"},"B000002176":{"g":"고위험"},"B000002085":{"g":"폐교위험","yi":0.103,"ci":0.551,"oi":0.526,"mi":0.041,"di":0.327,"yc":0,"cc":0,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"청소년","r2":"노인","r3":"장애인"},"B000002082":{"g":"폐교위험"},"B000002362":{"g":"폐교위험","yi":0.151,"ci":0.511,"oi":1.169,"mi":0.162,"di":1.178,"yc":1,"cc":1,"oc":5,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000002252":{"g":"고위험"},"B000002392":{"g":"고위험"},"B000001929":{"g":"고위험"},"B000001853":{"g":"고위험"},"B000001893":{"g":"폐교위험","yi":0.519,"ci":0.43,"oi":1.883,"mi":0.246,"di":2.802,"yc":0,"cc":3,"oc":9,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002247":{"g":"고위험"},"B000002022":{"g":"고위험"},"B000002267":{"g":"고위험"},"B000002104":{"g":"폐교위험","yi":0.083,"ci":0.557,"oi":0.566,"mi":0.038,"di":0.352,"yc":0,"cc":0,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"청소년","r3":"장애인"},"B000001881":{"g":"폐교위험"},"B000001922":{"g":"고위험"},"B000002355":{"g":"고위험"},"B000002416":{"g":"고위험"},"B000002122":{"g":"고위험"},"B000002357":{"g":"폐교위험"},"B000002393":{"g":"고위험"},"B000001895":{"g":"고위험"},"B000001909":{"g":"고위험"},"B000002276":{"g":"고위험"},"B000002299":{"g":"폐교위험","yi":0.419,"ci":0.908,"oi":1.797,"mi":0.111,"di":1.043,"yc":0,"cc":1,"oc":5,"mc":0,"dc":1,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002366":{"g":"폐교위험"},"B000001992":{"g":"고위험"},"B000002187":{"g":"고위험"},"B000001938":{"g":"고위험"},"B000001969":{"g":"고위험"},"B000002111":{"g":"고위험"},"B000002062":{"g":"고위험"},"B000001877":{"g":"고위험"},"B000002100":{"g":"고위험"},"B000002379":{"g":"고위험"},"B000002112":{"g":"폐교위험","yi":0.246,"ci":0.427,"oi":1.072,"mi":0.167,"di":0.605,"yc":0,"cc":1,"oc":4,"mc":0,"dc":0,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000001914":{"g":"고위험"},"B000002251":{"g":"고위험"},"B000001940":{"g":"고위험"},"B000002272":{"g":"고위험"},"B000001887":{"g":"고위험"},"B000002214":{"g":"고위험"},"B000002094":{"g":"폐교위험"},"B000001977":{"g":"고위험"},"B000002114":{"g":"폐교위험","yi":0.171,"ci":0.736,"oi":1.688,"mi":0.137,"di":0.838,"yc":0,"cc":0,"oc":3,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002253":{"g":"고위험"},"B000002037":{"g":"고위험"},"B000002093":{"g":"폐교위험","yi":0.117,"ci":0.11,"oi":0.447,"mi":0.041,"di":0.236,"yc":0,"cc":2,"oc":6,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"유아"},"B000002096":{"g":"폐교위험"},"B000002045":{"g":"고위험"},"B000002360":{"g":"고위험"},"B000002240":{"g":"고위험"},"B000002226":{"g":"고위험"},"B000001908":{"g":"고위험"},"B000001884":{"g":"폐교위험","yi":2.391,"ci":2.173,"oi":0.539,"mi":0.327,"di":3.726,"yc":0,"cc":3,"oc":45,"mc":0,"dc":0,"cl":2,"cn":"청소년 시설 중심 수요군","r1":"장애인","r2":"유아","r3":"청소년"},"B000002430":{"g":"고위험"},"B000002215":{"g":"고위험"},"B000002334":{"g":"고위험"},"B000002049":{"g":"폐교위험"},"B000002373":{"g":"고위험"},"B000002227":{"g":"고위험"},"B000002036":{"g":"고위험"},"B000002053":{"g":"고위험"},"B000002087":{"g":"고위험"},"B000002283":{"g":"고위험"},"B000001857":{"g":"고위험"},"B000001958":{"g":"고위험"},"B000002144":{"g":"고위험"},"B000001982":{"g":"고위험"},"B000001990":{"g":"폐교위험","yi":0.264,"ci":0.291,"oi":1.336,"mi":0.156,"di":0.523,"yc":0,"cc":2,"oc":5,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"청소년"},"B000002070":{"g":"고위험"},"B000001952":{"g":"고위험"},"B000002326":{"g":"고위험"},"B000002008":{"g":"고위험"},"B000002110":{"g":"고위험"},"B000001999":{"g":"고위험"},"B000001912":{"g":"고위험"},"B000002000":{"g":"고위험"},"B000001849":{"g":"고위험"},"B000001858":{"g":"고위험"},"B000002113":{"g":"고위험"},"B000002291":{"g":"고위험"},"B000002046":{"g":"폐교위험","yi":0.791,"ci":1.287,"oi":0.407,"mi":0.124,"di":0.664,"yc":0,"cc":3,"oc":17,"mc":0,"dc":1,"cl":1,"cn":"노인 시설 중심 수요군","r1":"청소년","r2":"유아","r3":"장애인"},"B000001988":{"g":"고위험"},"B000002277":{"g":"고위험"},"B000001845":{"g":"고위험"},"B000001926":{"g":"고위험"},"B000002052":{"g":"고위험"},"B000002067":{"g":"고위험"},"B000001899":{"g":"고위험"},"B000001986":{"g":"고위험"},"B000001862":{"g":"폐교위험","yi":0.381,"ci":0.797,"oi":1.643,"mi":0.212,"di":1.789,"yc":0,"cc":1,"oc":6,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"청소년"},"B000025276":{"g":"고위험"},"B000002105":{"g":"폐교위험"},"B000001981":{"g":"고위험"},"B000002300":{"g":"고위험"},"B000002005":{"g":"폐교위험","yi":0.744,"ci":0.514,"oi":0.801,"mi":0.68,"di":2.392,"yc":0,"cc":2,"oc":16,"mc":0,"dc":0,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"장애인","r2":"노인","r3":"유아"},"B000002188":{"g":"고위험"},"B000002327":{"g":"고위험"},"B000002145":{"g":"고위험"},"B000001989":{"g":"고위험"},"B000001880":{"g":"고위험"},"B000002023":{"g":"고위험"},"B000002142":{"g":"고위험"},"B000002040":{"g":"고위험"},"B000002157":{"g":"고위험"},"B000002289":{"g":"고위험"},"B000002193":{"g":"고위험"},"B000001968":{"g":"고위험"},"B000001856":{"g":"고위험"},"B000001937":{"g":"고위험"},"B000001998":{"g":"고위험"},"B000001854":{"g":"고위험"},"B000002027":{"g":"고위험"},"B000002095":{"g":"폐교위험"},"B000002336":{"g":"고위험"},"B000001984":{"g":"고위험"},"B000002068":{"g":"고위험"},"B000002202":{"g":"폐교위험","yi":0.458,"ci":0.165,"oi":1.433,"mi":0.177,"di":0.983,"yc":0,"cc":5,"oc":6,"mc":0,"dc":1,"cl":0,"cn":"장애인 시설 중심 수요군","r1":"노인","r2":"장애인","r3":"유아"},"B000001987":{"g":"고위험"},"B000002069":{"g":"고위험"},"B000002298":{"g":"고위험"},"B000002344":{"g":"고위험"},"B000002330":{"g":"고위험"},"B000025000":{"g":"고위험"},"B000002119":{"g":"고위험"},"B000001949":{"g":"고위험"},"B000001931":{"g":"고위험"},"B000002072":{"g":"고위험"},"B000001951":{"g":"고위험"},"B000002025":{"g":"고위험"},"B000002210":{"g":"고위험"},"B000002091":{"g":"폐교위험"},"B000002221":{"g":"고위험"},"B000002404":{"g":"고위험"},"B000002388":{"g":"고위험"},"B000001872":{"g":"고위험"}}},"youths":[["고척재미난지역아동센터",37.504444,126.860883],["한울지역아동센터",37.501146,126.899634],["진성지역아동센터",37.56722,127.08692],["테스트지역아동센터",37.566477,126.977675],["봄이랑지역아동센터",37.59379,127.095307],["유스비전스쿨 청소년전용지역아동센터",37.51132,126.92313],["라이프칠드런지역아동센터",37.484106,126.821673],["남애지역아동센터",37.64646,126.927549],["희망주는 지역아동센터",35.101415,128.975662],["열린지역아동센터",37.576558,126.894402],["꿈나무들의둥지지역아동센터",37.54423,126.86637],["송천동지역아동센터",37.61515,127.02509],["들꽃청소년지역아동센터",37.54553,127.12642],["꿈꾸는땅지역아동센터",37.57272,127.1767],["천호지역아동센터",37.54341,127.13211],["힘찬지역아동센터",37.58207,127.07419],["푸른공부방지역아동센터",37.52361,126.89828],["한별지역아동센터",37.46922,126.90664],["친구네지역아동센터",37.57439,127.01052],["함사람지역아동센터",37.45486,126.9032],["돌산공부방지역아동센터",37.61885,127.02267],["상도푸른지역아동센터",37.49831,126.94571],["늘품지역아동센터",37.64431,127.0103],["으뜸지역아동센터",37.64658,127.01478],["서초지역아동센터",37.47952,126.98413],["하나복지지역아동센터",37.48262,126.98381],["위더스틴즈지역아동센터",37.49898,126.94254],["위더스지역아동센터",37.50418,126.93973],["해밀지역아동센터",37.50133,127.14212],["화곡지역아동센터",37.53274,126.8591],["경향지역아동센터",37.55719,126.8517],["큰미래지역아동센터",37.56308,126.8106],["아름드리지역아동센터",37.51901,126.87608],["조이스터디",37.56944,127.03526],["위캔지역아동센터",37.54235,126.84863],["꿈나무공부방 지역아동센터",37.4637,126.91644],["구립고덕2동청소년지역아동센터",37.55879,127.16996],["보물섬지역아동센터",37.60968,126.90667],["서울지역아동센터",37.58975,127.08578],["나누리지역아동센터",37.4531,126.90892],["금천미래지역아동센터",37.4752,126.8973],["참좋은 지역아동센터",37.47621,126.91711],["민영지역아동센터",37.47628,126.91817],["양지 지역아동센터",37.48404,126.93726],["물댄동산목동지역아동센터",37.50749,126.86455],["마고네지역아동센터",37.59263,127.00669],["관악청소년 지역아동센터",37.47451,126.91385],["물댄동산난곡 지역아동센터",37.47753,126.91517],["암사지역아동센터",37.55602,127.13775],["발음지역아동센터",37.55092,126.83419],["마을속작은학교",37.64425,127.01805],["금나래지역아동센터",37.46756,126.89402],["독산1동지역아동센터",37.46264,126.88962],["주원지역아동센터",37.58661,126.94752],["참사랑지역아동센터",37.581957,127.090597],["참이랑지역아동센터",37.60117,127.08762],["행복한지역아동센터",37.60274,126.9155],["공립벧엘지역아동센터",37.60438,126.91664],["꿈이있는푸른학교지역아동센터",37.59668,126.91737],["이레지역아동센터",37.60227,126.91558],["은광지역아동센터",37.60631,126.93064],["동방지역아동센터",37.6006,126.90999],["생명나무 지역아동센터",37.54105,126.95806],["신일지역아동센터",37.5658,126.95898],["쪼물왕국지역아동센터",37.538904,126.895585],["성산교회부설 한우리 지역아동센터",37.4733,126.96435],["행복한지역아동센터",37.54665,127.08881],["은천지역아동센터",37.48838,126.92102],["밝은미래지역아동센터",37.55103,127.12963],["구립노원청소년지역아동센터",37.66017,127.0759],["광동 지역아동센터",37.47926,126.96081],["보라매 지역아동센터",37.49091,126.92893],["꿈둥지지역아동센터",37.47963,126.94439],["비전교실 지역아동센터",37.48459,126.9607],["꿈마을 지역아동센터",37.48579,126.94709],["다니엘청소년지역아동센터",37.53311,126.83215],["사무엘지역아동센터",37.5332,126.82887],["선유지역아동센터",37.5227,126.88877],["비젼학교지역아동센터",37.49211,127.08342],["선한지역아동센터",37.50945,126.96001],["솔나무지역아동센터",37.50711,126.93219],["아름다운안암지역아동센터",37.58257,127.03114],["우리지역아동센터",37.62961,127.03877],["점프지역아동센터",37.47394,127.04449],["비전트리지역아동센터",37.60886,127.047608],["송파희망세상지역아동센터",37.49256,127.14733],["함께꿈꾸는지역아동센터",37.55894,126.84405],["민들레학교지역아동센터",37.52654,126.90969],["신대방동구립지역아동센터",37.48651,126.90937],["겨레얼학교지역아동센터",37.53395,126.82525],["해피아트지역아동센터",37.58793,127.05956],["배움터지역아동센터",37.54012,127.13649],["디모데지역아동센터",37.51132,126.92313],["우신지역아동센터",37.493591,126.830883],["울림사회적협동조합 꾸러기지역아동센터",37.62067,127.03166],["해피지역아동센터",37.49644,126.83972],["드림홈스쿨지역아동센터",37.47545,126.8937],["누리지역아동센터",37.48724,126.88642],["무지개지역아동센터",37.65821,127.0384],["동작지역아동센터",37.4984,126.92897],["동화나라지역아동센터",37.48673,126.96725],["멘토지역아동센터",37.46029,126.90611],["렘넌트지역아동센터",37.46485,126.90154],["하늘품의집지역아동센터",37.660241,127.068184],["베다니지역아동센터",37.65576,127.01606],["쌍문지역아동센터",37.65015,127.02485],["성복행복한홈스쿨지역아동센터",37.56422,127.065],["이문꿈지역아동센터",37.59812,127.06147],["아이들의울타리 지역아동센터",37.5085,126.94065],["나눔지역아동센터",37.48955,126.91292],["흑석지역아동센터",37.50763,126.96606],["대방지역아동센터",37.51016,126.9301],["엘림지역아동센터",37.55956,126.90156],["망원무지개지역아동센터",37.55793,126.90436],["라온지역아동센터",37.55363,127.0702],["꿈터지역아동센터",37.55389,127.01848],["응봉지역아동센터",37.54895,127.0319],["장위희망지역아동센터",37.61599,127.04292],["아름다운지역아동센터",37.56305,127.17652],["강일지역아동센터",37.56157,127.17025],["돋움지역아동센터",37.55906,127.15255],["송중동지역아동센터",37.61382,127.03324],["울림사회적협동조합 산지역아동센터",37.64085,127.01926],["울림사회적협동조합하늘씨앗지역아동센터",37.62543,127.01868],["울림사회적협동조합 독립문지역아동센터",37.63449,127.03027],["강북지역아동센터",37.64426,127.01759],["경희지역아동센터",37.5657,127.08045],["꿈나래지역아동센터",37.49696,126.84066],["메이지역아동센터",37.49527,126.89365],["은혜지역아동센터",37.505,126.85656],["하늘지역아동센터",37.47616,126.90495],["안수인지역아동센터",37.44186,126.90429],["금천행복한지역아동센터",37.45797,126.90513],["사랑의지역아동센터",37.46454,126.8997],["아이들세상지역아동센터",37.46409,126.90336],["세림지역아동센터",37.45354,126.90363],["푸르미지역아동센터",37.50151,126.85854],["푸른샘지역아동센터",37.44946,126.90565],["푸른솔지역아동센터",37.53525,127.11342],["한사랑지역아동센터",37.55639,127.07232],["흑석희망지역아동센터",37.50763,126.96606],["성광지역아동센터",37.61382,127.0103],["한마음지역아동센터",37.58472,127.04831],["구로파랑새나눔터공부방지역아동센터",37.49483,126.88463],["생각의숲지역아동센터",37.50089,126.93782],["삼성지역아동센터",37.60097,127.0243],["오예스지역아동센터",37.46603,126.90515],["삼정학교지역아동센터",37.65165,127.05874],["해성지역아동센터",37.4894,126.95698],["그루터기배움터지역아동센터",37.5027,126.84477],["사랑지역아동센터",37.61124,127.0082],["동소문행복한 홈스쿨 지역아동센터",37.59723,127.01407],["시습지역아동센터",37.61229,127.01106],["그린리버지역아동센터",37.50146,127.14933],["꿈꾸는지역아동센터",37.50043,127.13702],["솔바람지역아동센터",37.49632,127.15448],["마을학교지역아동센터",37.52827,127.1336],["누리미지역아동센터",37.49944,127.15376],["송파열매지역아동센터",37.53154,127.11596],["강동꿈나무지역아동센터",37.5468,127.12385],["한길지역아동센터",37.5922,127.08242],["중화지역아동센터",37.60223,127.08532],["신당꿈 구립 지역아동센터",37.55821,127.01094],["구립 오금동 지역아동센터",37.49819,127.13985],["새날지역아동센터",37.54048,127.06557],["구립 문정1동 지역아동센터",37.488163,127.12732],["구립성내지역아동센터",37.53221,127.12936],["푸른나무지역아동센터",37.50564,126.96661],["마리스타 지역아동센터",37.54453,126.91413],["서진 지역아동센터",37.56781,126.90781],["우리모여지역아동센터",37.48056,126.97335],["좋은친구들지역아동센터",37.48195,126.97806],["작은사랑서울지역아동센터",37.50279,126.92887],["노량진행복한홈스쿨지역아동센터",37.511835,126.953943],["동작이수지역아동센터",37.49311,126.9769],["신상도지역아동센터",37.49702,126.94522],["구립 동대문 지역아동센터",37.57505,127.0574],["드림지역아동센터",37.57644,127.07241],["행복한지역아동센터",37.60272,127.06229],["꿈사랑방지역아동센터",37.57372,127.05236],["원광지역아동센터",37.57929,127.05879],["염광지역아동센터 빛나는집",37.57857,127.06194],["한길지역아동센터",37.59666,127.06462],["해맑음한일지역아동센터",37.66256,127.04531],["희망드림지역아동센터",37.64567,127.03745],["영광지역아동센터",37.6503,127.02689],["에듀존도봉지역아동센터",37.65325,127.04052],["창동드림지역아동센터",37.63532,127.0406],["아름다운 지역아동센터",37.64346,127.03558],["도서관 속 별난학교 지역아동센터",37.66262,127.02887],["참솔지역아동센터",37.66667,127.03219],["나눔플러스지역아동센터",37.64712,127.03114],["늘사랑 지역아동센터",37.65391,127.05183],["씨앗지역아동센터",37.68493,127.04571],["도봉지역아동센터",37.67004,127.03972],["방학동 지역아동센터",37.65878,127.02806],["구립월계문화지역아동센터",37.62426,127.05079],["샘터지역아동센터(공부방)",37.64668,127.03915],["지구촌지역아동센터",37.47905,126.89437],["영문지역아동센터",37.48754,126.85421],["놀이터지역아동센터",37.60906,127.07832],["파랑새지역아동센터",37.60522,127.09951],["씨앗지역아동센터",37.58894,127.08908],["파란나라지역아동센터",37.59221,127.08688],["녹색지역아동센터",37.58574,127.07671],["열린지역아동센터",37.60267,127.10205],["동원지역아동센터",37.58388,127.09047],["생명강지역아동센터",37.59752,127.07893],["동그라미지역아동센터",37.58709,127.07822],["면목지역아동센터",37.57635,127.08142],["차오름지역아동센터",37.59026,127.09339],["마루아라지역아동센터",37.60857,127.09477],["참좋은지역아동센터",37.59086,127.09783],["성심지역아동센터",37.58766,127.10134],["만나지역아동센터",37.58578,127.08013],["솔로몬지역아동센터",37.60421,127.10335],["즐거운지역아동센터",37.58495,127.07878],["나비훨훨지역아동센터",37.55129,127.00762],["세종지역아동센터",37.57285,126.96047],["연동지역아동센터",37.57399,127.00132],["한누리아동센터",37.57344,126.96053],["종로지역아동센터",37.5772,127.01219],["성터지역아동센터",37.57513,127.00923],["마로니에지역아동센터",37.57953,127.00517],["사단법인 공동육아와 공동체교육 해송지역아동센터",37.57785,127.00867],["중앙지역아동센터",37.574,127.00825],["청암지역아동센터",37.57734,127.01035],["구립오병이어 지역아동센터",37.59947,126.92438],["참신나는학교 지역아동센터",37.57316,127.01335],["증산동성산 지역아동센터",37.58418,126.90732],["광암 지역아동센터",37.58381,126.91706],["부림지역아동센터",37.62571,126.92783],["구로구공립지역아동센터",37.48058,126.83978],["구로행복한지역아동센터",37.48992,126.85365],["섬기는지역아동센터",37.49393,126.85025],["메리워드 지역아동센터",37.49969,126.84072],["한사랑지역아동센터",37.4881,126.88716],["구로푸른학교 지역아동센터",37.49664,126.88843],["지역아동센터평화만들기",37.49749,126.83128],["구로지역아동센터",37.48514,126.88683],["새솜 지역아동센터",37.50235,126.89215],["함사람지역아동센터",37.50353,126.86135],["꿈의학교지역아동센터",37.48955,126.85704],["어린이나라지역아동센터",37.53966,127.08653],["새빛지역아동센터",37.53728,127.07944],["희망샘지역아동센터",37.55905,127.0903],["중곡지역아동센터",37.55579,127.09082],["해피엘지역아동센터",37.53101,127.07526],["신양하늘꿈지역아동센터",37.53647,127.06144],["꿈나래지역아동센터",37.5583,127.08876],["새움터지역아동센터",37.53409,127.08392],["행복한지역아동센터",37.475,126.92078],["우리들의공부방",37.4833,126.92109],["새숲지역아동센터",37.46606,126.92862],["조원지역아동센터",37.48155,126.90874],["드림한누리지역아동센터",37.49222,126.94715],["아담스지역아동센터",37.46865,126.92117],["하늘지역아동센터",37.47441,126.93408],["민들레샘물 지역아동센터",37.4634,126.93716],["열린지역아동센터",37.48516,126.94575],["섬김의집",37.47139,126.93572],["난향지역아동센터",37.4624,126.9161],["강서누리지역아동센터",37.55785,126.81149],["소은지역아동센터",37.55578,126.81681],["방화지역아동센터",37.571225,126.805593],["한길지역아동센터",37.551175,126.868155],["새하늘지역아동센터",37.54021,126.83826],["좋은친구청소년지역아동센터",37.53867,126.84195],["좋은사람들지역아동센터",37.54444,126.84127],["솔로몬지역아동센터",37.57438,126.80952],["람원행복한홈스쿨 지역아동센터",37.55157,126.853],["열린지역아동센터",37.54016,126.85068],["성광행복한지역아동센터",37.57298,126.82205],["나욧지역아동센터",37.64192,127.02122],["아름다운 땅 지역아동센터",37.62884,127.03989],["강북구 공립지역아동센터",37.639815,127.032841],["희망의집 지역아동센터",37.62851,127.01829],["동산비젼스쿨지역아동센터",37.61635,127.03119],["서라벌지역아동센터",37.65807,127.01351],["삼동지역아동센터",37.6265,127.0468],["지역아동센터사랑의공부방",37.62553,127.04586],["구립함께하는지역아동센터",37.55678,127.17232],["구립길리청소년지역아동센터",37.53732,127.14206],["서울중심지역아동센터",37.53557,127.12795],["오륜레인보우지역아동센터",37.52608,127.1325],["길동지역아동센터",37.53563,127.14274],["제일강동지역아동센터",37.54465,127.14585],["암사꿈나무지역아동센터",37.54794,127.13298],["나래지역아동센터",37.54186,127.14535],["아름다운행복한홈스쿨지역아동센터",37.5504,127.14488],["명성지역아동센터",37.5446,127.13799],["구립우등생지역아동센터",37.5359,127.13962],["소리마을지역아동센터",37.54576,127.13335],["풍성한지역아동센터",37.59247,126.90642],["샘지역아동센터",37.60803,126.91439],["맑은지역아동센터",37.60634,126.92168],["비전스쿨지역아동센터",37.58489,126.91904],["구립광현청소년 지역아동센터",37.61832,126.91611],["푸른꿈나무지역아동센터",37.61764,126.93291],["동그라미지역아동센터",37.62433,126.91627],["갈현지역아동센터",37.6219,126.91692],["소망의집지역아동센터",37.60922,126.92382],["진관지역아동센터",37.63573,126.92013],["비단산지역아동센터",37.59372,126.90808],["그루터기지역아동센터",37.61499,126.91557],["은평지역아동센터 열린학교",37.6013,126.93305],["조은아이들지역아동센터",37.61283,126.93021],["광현지역아동센터",37.61832,126.91611],["누리사랑지역아동센터",37.5921,126.91268],["풍성한 지역아동센터",37.52881,126.99877],["한살림서울사회적협동조합 용산지역아동센터",37.5483,126.96481],["빛나라공부방(지역아동센터)",37.550984,126.975211],["소망을찾는이",37.54701,126.97568],["돌봄누리 지역아동센터",37.49418,126.90414],["구립푸르름지역아동센터",37.51345,126.91709],["대림2동지역아동센터",37.49263,126.89808],["조이드림지역아동센터",37.52923,126.89948],["다사랑영등포지역아동센터",37.510777,126.915976],["두날개지역아동센터",37.49945,126.8963],["솔로몬지역아동센터",37.54248,126.89042],["한믿음지역아동센터",37.49862,126.90892],["사르넬리지역아동센터",37.49567,126.90479],["햇살가득지역아동센터",37.50703,126.89789],["영등포좋은나무지역아동센터",37.52441,126.89309],["기린청소년지역아동센터",37.54117,126.87121],["예람지역아동센터",37.53699,126.82827],["섬나지역아동센터",37.52257,126.85972],["드림지역아동센터",37.53139,126.83318],["초록나무학교",37.52244,126.85666],["우리지역아동센터",37.52441,126.84657],["옹달샘지역아동센터",37.52155,126.83937],["비둘기지역아동센터",37.5185,126.83624],["암미신월지역아동센터",37.53594,126.82428],["강서성결행복한홈스쿨지역아동센터",37.52889,126.83767],["그리스도의교회지역아동센터",37.53872,126.86571],["선한지역아동센터",37.54369,126.86422],["푸른나래지역아동센터",37.5337,126.82763],["샘물지역아동센터",37.54638,126.87329],["한누리학교지역아동센터",37.51645,126.83676],["삼전지역아동센터",37.50604,127.09008],["도담지역아동센터",37.53716,127.12059],["해오름지역아동센터",37.50267,127.10732],["새비전지역아동센터",37.49777,127.1415],["아름다운지역아동센터",37.49623,127.12593],["기쁨지역아동센터",37.48445,127.1276],["R&T지역아동센터",37.50644,127.13099],["솔빛지역아동센터",37.49886,127.14303],["구립종암동꿈나무키우미돌봄센터",37.59875,127.03375],["구립 석관동 꿈나무키우미 돌봄센터",37.61144,127.06088],["구립 길음동 꿈나무키우미 돌봄센터",37.60666,127.01948],["푸른하늘 지역아동센터",37.61109,127.05977],["꿈나래 지역아동센터",37.60314,127.01455],["마가렛 지역아동센터",37.5932,126.99446],["밤골아이네공부방",37.60443,127.03355],["꿈터 지역아동센터",37.58853,127.01175],["목자 지역아동센터",37.60617,127.03446],["큰나무학교 지역아동센터",37.58939,127.02238],["월곡 지역아동센터",37.60513,127.02963],["아낌없이 주는 나무 지역아동센터",37.59651,127.03626],["성모의 집",37.61542,127.00263],["나무를심는학교",37.56288,126.9548],["다솔 지역아동센터",37.61408,127.04825],["장위지역아동센터밀알학교",37.61546,127.05107],["무학지역아동센터",37.56282,127.02794],["중동지역아동센터",37.54766,127.04321],["성동좋은이웃지역아동센터",37.56191,127.05509],["지역아동센터 도깨비방망이 공부방",37.53789,127.05124],["숲지역아동센터",37.55932,127.03217],["구립 방배동 지역아동센터",37.4865,126.98881],["구립 우면동 지역아동센터(우면행복한꿈터)",37.46942,127.02552],["우면지역아동센터",37.465374,127.02141],["여의칸지역아동센터",37.48635,126.98823],["새로핌지역아동센터",37.57723,126.9246],["큰사랑공부방",37.48256,126.99501],["구립가재울지역아동센터",37.57817,126.90905],["청소년1318해피존나무를심는학교",37.56389,126.95786],["다락지역아동센터",37.57296,126.95448],["행복무지개지역아동센터",37.55785,126.91528],["시냇가에심은나무지역아동센터",37.54113,126.95136],["성산행복한홈스쿨지역아동센터",37.55062,126.9082],["지역아동센터 나눔공부방",37.55012,126.94491],["옹달샘 지역아동센터",37.55282,126.9098],["구립수락지역아동센터",37.67464,127.05958],["구립하계지역아동센터",37.64345,127.07335],["구립한내지혜의숲지역아동센터",37.62359,127.06878],["구립꿈나무지역아동센터",37.6327,127.06123],["공립불암골지역아동센터",37.65075,127.08272],["구립노원1지역아동센터",37.6327,127.06123],["구립공릉행복지역아동센터",37.62206,127.07281],["구립공릉지역아동센터",37.63026,127.07037],["구립초안산숲속지역아동센터",37.63203,127.04448],["구립월계지역아동센터",37.62725,127.05287],["구립상계숲속지역아동센터",37.66944,127.05044],["구립상계1동지역아동센터",37.67991,127.05495],["구립상계3.4동지역아동센터",37.67293,127.08323],["신나는지역아동센터",37.64811,127.08242],["열림지역아동센터",37.67192,127.0513],["마음터지역아동센터",37.67209,127.0826],["금빛지역아동센터",37.65792,127.07141],["태릉지역아동센터",37.61907,127.07612],["함께하는사랑밭독산지역아동센터",37.480509,126.908953],["CLC희망학교지역아동센터",37.46099,126.89851],["살구지역아동센터",37.47514,126.90026],["금천영재지역아동센터",37.44118,126.90423],["비전지역아동센터",37.45301,126.90951],["전진상지역아동센터",37.45258,126.91074],["성원미디어스쿨지역아동센터",37.46864,126.90412],["한사랑지역아동센터",37.4499,126.90032],["금강지역아동센터",37.50078,126.85562],["하모니지역아동센터",37.48872,126.85432],["강남지역아동센터",37.4783,127.04975],["LH 행복꿈터 열린마음 지역아동센터",37.470747,127.091359],["수서청소년수련관",37.483591,127.088793],["역삼청소년수련관",37.493974,127.040912],["강남청소년수련관",37.520468,127.054044],["시립강동청소년센터",37.566478,127.173029],["천호청소년문화의집",37.545209,127.128834],["둔촌청소년문화의집",37.52945,127.144719],["시립강북청소년센터",37.645989,127.006406],["봉도청소년수련원",37.66702,127.010719],["강서청소년회관",37.556479,126.844286],["화곡청소년센터",37.534802,126.860749],["관악청소년센터",37.470244,126.935243],["삼성산청소년센터",37.456852,126.929146],["광진청소년센터",37.546319,127.106555],["구로청소년센터",37.49132,126.883399],["궁동청소년문화의집",37.493398,126.832723],["천왕동청소년문화의집",37.483929,126.840241],["금천청소년센터",37.448222,126.915691],["독산청소년문화의집",37.463787,126.892779],["금천청소년문화의집",37.448883,126.903231],["노원청소년센터",37.641478,127.058217],["공릉청소년문화정보센터",37.62152,127.083049],["상계청소년문화의집",37.671138,127.05666],["노원청소년미래진로센터",37.641685,127.073372],["도봉숲속마을",37.687343,127.038597],["도봉구립쌍문동청소년문화의집",37.654218,127.02908],["창동청소년문화의집",37.638,127.04299],["시립창동청소년센터",37.658117,127.050705],["북한산생태탐방원",37.687328,127.034761],["도봉동청소년문화의집",37.684307,127.046858],["시립동대문청소년센터",37.587241,127.049827],["사당청소년센터",37.485393,126.975726],["동작청소년센터",37.504061,126.933264],["보라매청소년센터",37.493869,126.921806],["대방청소년센터",37.507229,126.926672],["마포청소년센터",37.566313,126.901616],["마포청소년문화의집",37.580322,126.883846],["도화청소년문화의집",37.537634,126.950216],["구립망원청소년문화센터",37.556965,126.898818],["서대문청소년센터",37.578974,126.938345],["홍은청소년문화의집",37.601633,126.949914],["가재울청소년센터",37.575097,126.91847],["방배유스센터",37.478286,126.999056],["서초유스센터",37.485506,127.010358],["성동청소년문화의집",37.549241,127.01853],["시립성동청소년센터",37.56236,127.036453],["성북청소년센터",37.617359,127.055981],["성북청소년문화의집",37.615652,127.008506],["월곡청소년센터",37.61087,127.040729],["마천청소년센터",37.492347,127.156637],["송파청소년센터",37.489706,127.111301],["잠실청소년센터",37.509632,127.080102],["오금청소년센터",37.5004,127.141556],["서울시립청소년드림센터",37.531033,126.826698],["목동청소년센터",37.530719,126.875499],["신월청소년문화센터",37.53522,126.825499],["서울시립청소년음악센터",37.510588,126.842871],["문래청소년센터",37.518852,126.894115],["영등포청소년문화의집",37.513658,126.917078],["청소년미래진로센터",37.525167,126.9033],["청소년성문화센터",37.525167,126.9033],["청소년미디어센터",37.541,126.972664],["용산청소년센터",37.521357,126.973298],["용산청소년문화의집",37.538904,126.965012],["온누리청소년문화의집",37.517174,126.983879],["시립은평청소년센터",37.594216,126.924544],["은평청소년문화의집 신나는애프터센터",37.604373,126.916627],["갈현청소년문화의집",37.625461,126.919469],["서울청소년센터",37.56747,126.990557],["중구청소년센터",37.551924,127.012518],["청소년문화교류센터",37.559089,126.990266],["망우청소년센터",37.606221,127.108839],["중랑청소년센터 ",37.573227,127.085973]],"elderlys":[["청운노인요양원",37.615181,126.95496],["인자인케어센터",37.61286,126.966656],["평창동시니어센터",37.610607,126.965675],["아름다운뜰안에요양원",37.611537,126.968296],["서울여자간호대학교 휴먼캐슬",37.614007,126.977217],["세검정실버홈",37.605681,126.963695],["해피움시니어스타워(종로점)",37.602022,126.957431],["아름다운재활요양원",37.610318,126.974565],["남산실버복지센터",37.546827,127.008809],["구립중구노인요양센터",37.553346,126.996816],["구립용산노인전문요양원",37.547083,126.961629],["구립한남노인요양원",37.535602,127.010775],["시립동부노인전문요양센터",37.56763,127.032963],["금호노인요양원",37.547513,127.025306],["이암요양원",37.568081,127.023983],["송정요양원",37.557584,127.034571],["광진원광실버센터",37.540978,127.092021],["므두셀라실버타운",37.561331,127.082084],["사랑재요양원",37.544298,127.085239],["광진소규모요양시설",37.553096,127.092418],["워커힐실버타운",37.550537,127.097917],["워커힐케어센터1",37.548989,127.108301],["워커힐케어센터2",37.548989,127.108301],["광진한울촌노인요양시설",37.55018,127.070653],["유자원",37.586212,127.063553],["은천노인요양센터",37.576008,127.071412],["은천요양원",37.575497,127.070917],["시립동대문실버케어센터",37.575849,127.044918],["한사랑실버케어요양원",37.572655,127.07507],["안암고운너싱홈",37.586272,127.033947],["메디컬요양원",37.582945,127.043771],["A+평화요양원",37.589853,127.073557],["골든시니어케어센터",37.612403,127.076834],["나눔요양원",37.590122,127.074176],["상봉요양원요양센터",37.594474,127.099266],["서울꽃동네 신내노인요양원",37.616207,127.094975],["서울시립중랑노인전문요양원",37.604395,127.107681],["유린원광노인요양원",37.60447,127.095916],["영지요양원",37.590968,127.078334],["장원서울요양원",37.594389,127.100139],["중랑삼성요양원",37.584305,127.078811],["한세노인복지센터",37.603761,127.096204],["e포근한 요양원",37.610814,127.003774],["길음안나의집 노인전문요양원",37.605439,127.017876],["다애요양원",37.594473,127.012706],["더 프라임 요양원",37.597363,127.032964],["둥지요양원",37.606398,127.036436],["보문요양원",37.587386,127.020722],["부모섬김노인요양원",37.610863,127.03564],["백마요양원",37.598854,127.035464],["성북힐요양원",37.595397,126.988733],["성신노인요양원",37.596185,127.015027],["순애노인전문요양원",37.712873,126.873835],["일광노인요양센터",37.58694,127.013486],["정릉노인요양원",37.605872,127.00254],["정진요양원",37.612702,127.013371],["종암요양원",37.596581,127.032772],["진각노인요양센터",37.604748,127.04109],["청화요양원",37.609489,127.015238],["한솔요양원",37.605097,127.038512],["케어윌",37.579923,127.022673],["가족사랑요양원",37.644419,127.021007],["강북노인전문요양원",37.636542,127.018014],["강북실버종합복지센터",37.627124,127.029788],["길재활요양원",37.639308,127.012363],["민영재활요양원",37.633814,127.033038],["번동자연재활요양원",37.627862,127.039215],["봄날북한산요양원",37.645226,127.006662],["푸른요양원1호점",37.634886,127.020604],["푸른요양원2호점",37.634886,127.020604],["현인요양원",37.638656,127.00673],["TOP동그라미 요양원",37.668352,127.044852],["행복드림요양원",37.671401,127.045419],["참존요양원",37.658842,127.041498],["큰사랑요양원",37.682233,127.047755],["love사랑맞이요양원",37.668352,127.044852],["실버빌요양원",37.651821,127.038947],["은나무요양원",37.682233,127.047755],["참빛요양센터",37.66146,127.041408],["청춘요양원",37.682233,127.047755],["큰사랑노인요양원",37.669231,127.045274],["행복요양원",37.682233,127.047755],["A플러스노아재활요양원",37.668352,127.044852],["A+도봉재활요양원",37.669231,127.045274],["다사랑요양원",37.690143,127.040601],["도봉실버센터",37.662925,127.026991],["참존vip요양원",37.658842,127.041498],["실버케어너싱홈",37.67629,127.043959],["효심요양원",37.682233,127.047755],["선한노인전문요양원",37.63918,127.042084],["미소사랑요양원",37.682233,127.047755],["희망요양원",37.640758,127.038515],["시립중계노인요양원",37.64356,127.061588],["구립하계실버센터",37.633108,127.06419],["A+행복한그린요양원",37.6726,127.057597],["길요양원",37.656459,127.073458],["노원실버센터",37.627801,127.07124],["노원요양복지원",37.65787,127.066259],["늘사랑실버센터",37.663613,127.068493],["러빙케어요양원",37.658157,127.061721],["상계요양원",37.6743,127.06121],["서울실버케어노인요양원",37.664184,127.069937],["영기노인요양원",37.680484,127.056929],["태릉참실버케어",37.62446,127.090336],["시립은평실버케어센터",37.585682,126.895962],["갈현효요양원",37.621016,126.916758],["노블케어스",37.60275,126.922273],["노블타운요양원",37.603907,126.92467],["녹번실버",37.604198,126.933981],["마추미실버케어응암점",37.58924,126.916425],["붓다마을",37.639284,126.938087],["수색실버케어",37.583134,126.894412],["실비아요양원",37.590024,126.908968],["써니요양원",37.589671,126.910582],["엘림요양원",37.602195,126.922717],["은평실버랜드요양원",37.615077,126.91423],["은평요양원",37.601484,126.920077],["해피안",37.611165,126.91362],["정원노인요양원",37.754502,126.88678],["정원치매노인요양센터",37.754502,126.88678],["자유의집",37.604344,126.913104],["서대문노인복지관요양센터",37.568004,126.959118],["홍은노인요양시설",37.601172,126.948389],["구립서대문노인전문요양센터",37.598282,126.955943],["중앙소규모요양시설",37.560907,126.965029],["효림노인요양센터",37.564329,126.960893],["효드림요양원",37.657985,127.045839],["해든케어스 요양원",37.57824,126.935686],["연희시니어스",37.576357,126.934806],["행복가득요양원",37.578613,126.908925],["시립서부노인전문요양센터",37.566463,126.902502],["서울특별시립마포실버케어센터",37.547459,126.950578],["노아케어링하우스",37.549785,126.946789],["늘푸른소망요양원",37.518928,126.836562],["목동평강요양원",37.520195,126.859572],["올리사랑요양원",37.519925,126.843898],["정다운요양원",37.52541,126.860553],["하늘정원요양원",37.532885,126.864166],["양천어르신종합복지관병설 양천어르신요양센터",37.510443,126.858628],["사랑초요양원",37.52376,126.826137],["신목행복자리어르신요양센터",37.518426,126.876286],["두엄자리",37.543953,126.865763],["신월실버요양원",37.52978,126.83609],["실버캐슬요양타운",37.516182,126.835834],["구립양천어르신요양센터",37.512956,126.827072],["서울실버하임",37.52116,126.859191],["강서사랑요양원",37.530391,126.840822],["경희요양원",37.552591,126.826197],["나오미요양원",37.577445,126.812438],["늘푸른요양원",37.553227,126.826393],["백영실버스테이",37.577445,126.812438],["봄날강서요양원",37.57388,126.80933],["봄날서울요양원",37.574154,126.809262],["봄날실버센터",37.568922,126.811486],["선화요양원",37.546254,126.862264],["수명산요양원",37.547788,126.825261],["시니어스너싱홈",37.556989,126.859332],["요안나요양원",37.547568,126.846265],["참사랑실버케어",37.547544,126.849282],["천사노인요양원",37.546692,126.833486],["한가람요양원",37.546254,126.862264],["한마음노인전문요양원",37.541007,126.8481],["한솔요양원",37.553472,126.826446],["햇살요양원",37.55928,126.845712],["행복마지 요양원",37.531265,126.84754],["행복한집",37.578825,126.800513],["호선실버센터",37.551306,126.827858],["효도로 노인전문요양원",37.497442,126.863049],["미소들실버케어센터",37.502898,126.841199],["구로푸른요양원",37.486193,126.855789],["삼농실버마을",37.492375,126.844756],["휴림실버요양센터",37.484621,126.887439],["구로 미가 요양원",37.4809,126.83938],["늘봄시니어케어센터",37.502507,126.884949],["그린케어요양센터",37.503138,126.862561],["보라매요양원",37.507978,126.863607],["메디치피아요양센터",37.500038,126.865749],["우리함께요양원",37.493865,126.838291],["가족사랑요양원",37.453043,126.901712],["금천구립 사랑채요양원",37.449612,126.914294],["금천에이스요양원",37.451966,126.902116],["남부실버요양센터 다솔관",37.465146,126.894427],["남부실버요양원",37.465146,126.894427],["노인요양센터 인영실버",37.453436,126.89795],["로뎀복지요양원",37.45348,126.899616],["사랑가득요양원",37.464359,126.903193],["서울조은요양원",37.478546,126.900572],["섬기는요양원",37.453043,126.901712],["이삭요양원",37.453043,126.901712],["임원요양원",37.478941,126.903649],["하나요양원",37.475773,126.893364],["청림요양원",37.466943,126.896847],["시립남부노인전문요양원",37.365334,126.9257],["구립영등포노인케어센터",37.516856,126.890542],["동작요양원",37.496873,126.925585],["청운노인복지센터",37.495711,126.933354],["나이팅게일 너싱홈",37.476483,126.971221],["보라매실버홈",37.490942,126.923271],["은미요양원",37.492483,126.956013],["동작실버센터",37.511604,126.95722],["동명노인복지센타",37.488438,126.937222],["미성요양원",37.479187,126.914208],["법화노인요양원",37.476374,126.924942],["관악노인종합사회복지관 병설 관악치매전문요양센터",37.493041,126.92633],["강남한보리전문요양원",37.483218,126.920593],["삼성요양원",37.46108,126.92596],["관악실버케어",37.464558,126.936313],["나은요양원",37.479007,126.915294],["서울숲요양원",37.459606,126.915086],["구립서초노인요양센터",37.481743,127.024625],["KB골든라이프케어 서초빌리지",37.465131,127.020711],["장생시니어타운",37.5095,127.021255],["서초 어반 시니어스",37.484697,126.992688],["강남구립 논현요양센터",37.512065,127.026089],["구립 역삼노인요양센터",37.494538,127.041832],["강남실버센터",37.515911,127.052143],["국민건강보험공단 서울요양원",37.46137,127.104021],["광림노인전문요양원",37.841249,127.598391],["더시그넘하우스 너싱홈",37.473228,127.103779],["강남 성은실버케어스",37.477818,127.045132],["오아시스 메디홈",37.52224,127.039013],["시립송파노인전문요양원",37.499024,127.094937],["구립송파노인요양센터",37.485795,127.134322],["송파치매케어센터",37.498668,127.094896],["청암노인요양원",37.501482,127.149804],["KB골든라이프케어 위례빌리지",37.480905,127.143875],["굿모닝케어노인전문요양원",37.498397,127.139451],["보눔케어요양원",37.498834,127.099524],["경복궁요양센터",37.496478,127.157436],["봄날요양원",37.506355,127.130501],["강일성모노인요양원",37.55782,127.178556],["대한연세요양원",37.557405,127.172576],["강동노인복지관 치매요양원",37.552211,127.154621],["성암장수마을",37.548654,127.142466],["그랜드너싱홈",37.53684,127.139314],["마더노인요양센터",37.539146,127.146796],["강동힐링요양원",37.536056,127.148913],["서울케어링하우스",37.55516,127.129016],["종근당산업㈜ 벨포레스트",37.558071,127.177234],["시립강동실버케어센터",37.555303,127.146596],["서울시립영보노인요양원",37.169051,127.239856],["아름다운실버홈",37.612557,126.965403],["효심원",37.556991,127.011055],["서울숲재활요양원",37.538948,127.055403],["서울숲요양원",37.538948,127.055403],["한마음너싱홈",37.562181,127.055253],["금호무지개요양원",37.554015,127.019142],["광진늘푸른공동생활가정",37.532708,127.077942],["노블레스요양원2",37.563042,127.086732],["실버밸리노인요양공동생활가정",37.533624,127.084366],["사랑이있는집",37.560825,127.09024],["강변케어센터",37.533946,127.091388],["강변케어센터2",37.533946,127.091388],["밝은요양원",37.563712,127.077548],["노블레스요양원1",37.563042,127.086732],["성동실버케어요양원",37.532708,127.077942],["중곡요양원",37.571218,127.08323],["광진노인보호센터",37.531315,127.084613],["은나무요양원",37.568649,127.063206],["은파요양원",37.568649,127.063206],["도우누리편안한요양원",37.576318,127.066516],["맑은샘요양원",37.576318,127.066516],["서울백세요양원",37.582136,127.038893],["서울팔팔요양원",37.582136,127.038893],["보은요양원",37.579962,127.068052],["소망요양원",37.576318,127.066516],["홍릉요양원",37.586468,127.041067],["경동노인요양원",37.582795,127.043383],["경동노인요양원",37.582795,127.043383],["정든요양원",37.586468,127.041067],["우리집요양원",37.586468,127.041067],["평화요양원",37.586468,127.041067],["성창요양원",37.576317,127.066195],["미소지움요양원",37.576318,127.066516],["가천요양원",37.605833,127.09608],["금강요양원",37.595084,127.081747],["굿데이요양원",37.594976,127.100268],["늘푸른요양원",37.59448,127.09982],["늘푸른요양원 2호점",37.59448,127.09982],["동우너싱홈",37.599312,127.098976],["두레노인요양원C",37.603141,127.095551],["로뎀노인요양공동생활가정",37.613725,127.074427],["면목요양원",37.591459,127.093246],["베스트그린요양원 1호점",37.599689,127.079467],["베스트그린요양원 2호점",37.599689,127.079467],["사랑과섬김요양원",37.611116,127.077295],["사랑채요양원",37.572581,127.084132],["새솔요양원",37.591951,127.081968],["엘림요양원",37.602195,126.922728],["예원요양원",37.600436,127.100712],["예원요양원 2호점",37.600436,127.100712],["우리가족요양원1호점",37.59448,127.09982],["우리가족요양원2호점",37.59448,127.09982],["우림요양센터",37.594976,127.100268],["정원요양원",37.598881,127.105413],["조은노인요양센터",37.586436,127.094379],["존엄케어전문요양원",37.578561,127.090883],["축복재가장기노인요양원",37.586498,127.094934],["카멜리아요양원",37.613734,127.076567],["평강요양원",37.598881,127.105413],["효마을 중랑요양원",37.595542,127.102118],["효심(가)요양원",37.593121,127.071741],["효심(나)요양원",37.593121,127.071741],["효심(다)요양원",37.593121,127.071741],["효심(라)요양원",37.593121,127.071741],["효심요양원1호점",37.593121,127.071741],["효심요양원2호점",37.593121,127.071741],["효원노인복지센터 A",35.846191,128.568205],["늘푸른요양원",37.606085,127.044909],["명성노인복지센터",37.60523,127.011987],["석관실버홈",37.611987,127.059721],["우리엄마요양원",37.585994,127.018731],["우리엄마요양원 2호점",37.585994,127.018731],["가온요양원1",37.642158,127.02342],["가온요양원2",37.642158,127.02342],["가인요양원",37.642408,127.016293],["가족사랑노인요양센터",37.613285,127.037339],["강북유진요양원",37.62955,127.017037],["강북중앙요양원",37.630132,127.0243],["강북하루정요양원",37.642189,127.016299],["강북효심요양원1",37.62955,127.017037],["강북효심요양원2",37.62955,127.017037],["거목노인요양원",37.647561,127.016587],["거목실버홈",37.647561,127.016587],["거목요양홈",37.647561,127.016587],["북부성모요양원",37.646948,127.017429],["사랑나눔요양원2",37.630132,127.0243],["수호천사요양원",37.642567,127.016836],["참사랑요양원",37.61632,127.033716],["햇살요양원 1호점",37.642539,127.030122],["햇살요양원 2호점",37.642539,127.030122],["행복한노인요양원1",37.63407,127.018656],["행복한노인요양원2",37.63407,127.018656],["행복한노인요양원3",37.63407,127.018656],["효노인복지센터",37.628836,127.039874],["굿모닝요양원",37.672752,127.043783],["굿모닝요양원2호점",37.672752,127.043783],["그린요양원",37.66261,127.039515],["사랑채요양종합복지센터",37.657914,127.037808],["강북요양원",37.664316,127.042312],["강북요양원 2호점",37.664316,127.042312],["도봉요양원",37.658419,127.040093],["도봉은빛요양원",37.663037,127.040489],["수노인요양공동생활가정1호점",37.664835,127.036345],["수노인요양공동생활가정2호점",37.664835,127.036345],["쌍문늘푸른요양원",37.658418,127.032592],["가원노인요양공동생활가정1호점",37.662158,127.033409],["도봉늘푸른요양원",37.66261,127.039515],["강북실버요양원",37.664316,127.042312],["강북실버요양원2호점",37.664316,127.042312],["꿈에그린요양원1",37.663037,127.040489],["도봉하루요양원2호점",37.658541,127.039129],["도봉하루요양원3호점",37.658541,127.039129],["도봉효드림요양원",37.658,127.04581],["사랑재활요양원",37.643193,127.039499],["사랑재활요양원2호점",37.643193,127.039499],["사랑재활요양원3호점",37.643193,127.039499],["동그라미요양센터",37.658541,127.039129],["동그라미요양센터 2호점",37.658541,127.039129],["사랑방요양원",37.669468,127.043161],["기쁨과나눔노인요양원",37.661113,127.040116],["기쁨과나눔노인요양원 2호점",37.661113,127.040116],["강북재활요양원",37.664316,127.042312],["강북재활요양원2호점",37.664316,127.042312],["하루정요양센터",37.655306,127.037598],["노원성모요양원",37.65888,127.064603],["돌봄간호요양원1",37.666912,127.05755],["돌봄간호요양원2",37.666912,127.05755],["노블레스요양원",37.65888,127.064603],["행복한요양원",37.586467,126.972535],["가족마음요양원",37.661616,127.066593],["사랑과섬김요양원",37.662026,127.0703],["수요양원",37.674263,127.052793],["늘봄요양원",37.661616,127.066593],["늘품실버요양원",37.661616,127.066593],["가온요양원",37.65888,127.064603],["효누리요양원",37.662026,127.0703],["백련실버케어",37.595184,126.91115],["사랑가득요양원1호",37.581899,126.896625],["사랑가득요양원2호",37.581899,126.896625],["사랑가득요양원3호",37.581899,126.896625],["시온노인요양원",37.621016,126.916758],["주안요양원",37.612181,126.913406],["(협)노인돌봄은평요양원",37.595184,126.91115],["중앙실버노인요양공동생활가정",37.561029,126.964587],["연궁너싱홈",37.572262,126.928881],["목동조은요양원",37.522566,126.852049],["나눔의집",37.527945,126.859714],["보람의집",37.527945,126.859714],["나이팅게일너싱홈",37.521349,126.840402],["신목동 노인복지센터",37.522566,126.852049],["88소망요양원",37.545421,126.844307],["가족사랑노인요양원",37.530497,126.843622],["다복요양원",37.545421,126.844307],["맑은요양원",37.545421,126.844307],["밝은햇살요양원",37.539215,126.839732],["세반요양원",37.56686,126.842805],["솔요양원",37.532638,126.844466],["푸른소나무강서요양원",37.552718,126.830669],["푸른솔요양원",37.532638,126.844466],["푸른요양원",37.553229,126.826393],["행복요양원",37.496807,126.844062],["소망요양원1",37.49174,126.888768],["강이보이는요양원",37.486102,126.856776],["강남가정요양원 3",37.472621,126.903396],["강남가정요양원 4",37.472621,126.903396],["금천햇살요양원",37.477102,126.898322],["대한실버하우스",37.469536,126.903966],["샘물요양원",37.466144,126.901602],["시니어실버타운2",37.466144,126.901602],["실버캐슬요양원",37.472997,126.897266],["주은요양원",37.477102,126.898322],["서울성모원 노인요양공동생활가정",37.491474,126.904628],["은빛사랑1",37.49162,126.902761],["은빛사랑2",37.49162,126.902761],["은빛사랑3",37.49162,126.902761],["미래요양원",37.490139,126.904554],["미래요양원2",37.490139,126.904554],["어버이사랑노인의료복지센터1",37.505956,126.902248],["어버이사랑노인의료복지센터2",37.505956,126.902248],["어버이사랑노인의료복지센터3",37.505956,126.902248],["대림실버1 노인요양공동생활가정",37.492101,126.903149],["대림실버2 노인요양공동생활가정",37.492101,126.903149],["21세기요양원",37.506344,126.900079],["정성요양원",37.497376,126.927645],["정성노인요양원",37.497376,126.927645],["신상도요양원",37.497008,126.94522],["청남노인요양공동생활가정",37.50528,126.951023],["에덴요양원",37.482701,126.911379],["인애요양원",37.474237,126.933712],["가나안요양원",37.48324,126.905063],["다원요양원",37.481659,126.905888],["다원요양센터",37.481659,126.905888],["은빛요양원Ⅱ",37.471679,126.934842],["난향요양원1",37.481353,126.913882],["난향요양원2",37.481353,126.913882],["중앙요양원",37.48046,126.910123],["신림요양원 1",37.478391,126.915412],["신림요양원 2",37.478391,126.915412],["벧엘의집요양원",37.477447,126.91437],["효사랑요양원",37.475003,126.952431],["벧엘의집요양원2",37.477447,126.91437],["명지요양원",37.482177,126.914736],["나눔요양원",37.481337,126.91373],["은빛요양원1",37.471679,126.934842],["엔젤요양원",37.48046,126.910123],["사랑의집",37.456918,127.057827],["구립대치노인요양센터",37.503043,127.05413],["강남유명요양원",37.493591,127.086609],["한마음요양원",37.47524,127.049205],["신아노인요양안심가정",37.491472,127.145474],["송파그린요양원",37.500211,127.150837],["송파그린요양원2",37.500211,127.150837],["수실버간호센터",37.500018,127.151182],["은빛요양원1",37.501636,127.148025],["은빛요양원2",37.501636,127.148025],["A+은빛요양원1",37.501636,127.148025],["A+은빛요양원2",37.501636,127.148025],["A+은빛요양원3",37.501636,127.148025],["가족사랑요양원",37.498842,127.122358],["가락사랑요양원",37.498842,127.122358],["포도나무실버타운1호점",37.497656,127.096945],["포도나무실버타운3호점",37.497656,127.096945],["에덴실버요양원",37.490126,127.127865],["(A+)강동포도나무요양원 1호점",37.546625,127.14419],["(A+)강동포도나무요양원 2호점",37.546625,127.14419],["흰돌장기요양센터1호점",37.548415,127.135242],["흰돌장기요양센터2호점",37.548415,127.135242],["흰돌장기요양센터3호점",37.548415,127.135242],["은혜요양원",37.542797,127.144502],["늘편한요양센터",37.547765,127.135344],["늘편한요양센터2호점",37.547765,127.135344],["늘편한요양원",37.547765,127.135344],["강동천호실버센터1호",37.540555,127.124976],["강동천호실버센터2호",37.540555,127.124976],["정원실버요양원",37.542797,127.144502],["정원실버요양원2호점",37.542797,127.144502],["효원노인복지센터 B",37.599624,127.087416],["효원노인복지센터 C",37.599624,127.087416],["효원노인복지센터 D",37.599624,127.087416],["가원노인요양공동생활가정2호점",37.662158,127.033409],["소망요양원2",37.491636,126.888689]],"age_totals":[40634,36799,34554,36976,38770,39628,43477,46228]};
+const years=[2027,2028,2029,2030,2031,2032,2033];
+const dangerCounts=[24,26,27,28,31,33,35];
+const highCounts=[91,104,111,116,123,125,131];
+
+// ── 상수 ──────────────────────────────────────────────────────────────────
+const YEARS = [2027,2028,2029,2030,2031,2032,2033];
+
+const GRADE_COLOR  = {'폐교위험':'#ef4444','고위험':'#f97316','안전':'#22c55e'};
+const GRADE_ORDER  = {'폐교위험':0,'고위험':1,'안전':2};
+const GRADE_BADGE  = {'폐교위험':'badge-danger','고위험':'badge-high','안전':'badge-safe'};
+
+const FAC_KEYS = [
+  {key:'yi', label:'유아',   color:'#3b82f6', cnt:'yc'},
+  {key:'ci', label:'청소년', color:'#f97316', cnt:'cc'},
+  {key:'oi', label:'노인',   color:'#22c55e', cnt:'oc'},
+  {key:'mi', label:'다문화', color:'#8b5cf6', cnt:'mc'},
+  {key:'di', label:'장애인', color:'#ef4444', cnt:'dc'},
+];
+const FAC_MAX = 5.0;
+
+const FAC_ICONS = {
+  '유아':   {emoji:'👶', color:'#3b82f6'},
+  '청소년': {emoji:'🧒', color:'#f97316'},
+  '노인':   {emoji:'👴', color:'#22c55e'},
+  '다문화': {emoji:'🌏', color:'#8b5cf6'},
+  '장애인': {emoji:'♿', color:'#ef4444'},
+};
+const VWORLD_KEY = '2755317D-E3CD-3CAE-A56D-4F01917C7757';
+const RADIUS_M   = 700;
+
+// ── 학교 맵 빌드 ──────────────────────────────────────────────────────────
+// schools[i] = [id, name, finalGrade, dangerYr, highYr, lat, lng, dong, minStu, minStuYr, preds]
+const schoolMap = {};
+RAW.schools.forEach(s => {
+  schoolMap[s[0]] = {
+    id:         s[0],
+    name:       s[1],
+    finalGrade: s[2],
+    dangerYr:   s[3],
+    highYr:     s[4],
+    lat:        s[5],
+    lng:        s[6],
+    dong:       s[7],
+    minStudents:s[8],
+    minStudentYr:s[9],
+    preds:      s[10],   // [2026..2033] 신입생 예측
+  };
+});
+
+// ── 상태 ──────────────────────────────────────────────────────────────────
+let currentYearIdx = 0;
+let currentYear    = 2027;
+let selectedId     = null;
+let activeGrades   = new Set();
+let sortOrder      = 'desc';  // 'desc': 높은순, 'asc': 낮은순
+let isPlaying      = false;
+let playTimer      = null;
+let enrollChart    = null;
+let leafMap        = null;
+const mapMarkers   = {};
+let radiusCircle   = null;
+let facMarkers     = [];
+
+// ── 연도별 등급 조회 ──────────────────────────────────────────────────────
+function getGrade(id, year) {
+  const rd = RAW.risk[String(year)];
+  return (rd && rd[id]) ? rd[id].g : '안전';
+}
+function getRiskData(id, year) {
+  const rd = RAW.risk[String(year)];
+  return (rd && rd[id]) ? rd[id] : null;
+}
+
+// ── 지도 초기화 ───────────────────────────────────────────────────────────
+function initMap() {
+  const seoulBounds = L.latLngBounds(
+    [37.413, 126.734],   // 남서
+    [37.715, 127.269]    // 북동
+  );
+  leafMap = L.map('map', {
+    center: [37.5630, 126.986],
+    zoom: 12,
+    minZoom: 11,
+    maxBounds: seoulBounds,
+    maxBoundsViscosity: 0.85,
+    zoomControl: true,
+  });
+
+  L.tileLayer('https://api.vworld.kr/req/wmts/1.0.0/2755317D-E3CD-3CAE-A56D-4F01917C7757/Base/{z}/{y}/{x}.png', {
+    attribution: '© 국토지리정보원',
+    maxZoom: 18,
+    tileSize: 256,
+  }).addTo(leafMap);
+
+  Object.values(schoolMap).forEach(sch => {
+    if (!sch.lat || !sch.lng) return;
+    const m = L.marker([sch.lat, sch.lng], { icon: schoolIcon('안전', false) })
+      .addTo(leafMap);
+    m.on('click', () => selectSchool(sch.id));
+    mapMarkers[sch.id] = m;
+  });
+}
+
+function schoolIcon(grade, selected) {
+  const color = GRADE_COLOR[grade];
+  const size  = selected ? 34 : 26;
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      background:${color};width:${size}px;height:${size}px;
+      border-radius:50%;border:2.5px solid rgba(255,255,255,0.9);
+      display:flex;align-items:center;justify-content:center;
+      font-size:${selected ? 16 : 13}px;
+      box-shadow:0 2px 8px rgba(0,0,0,.35);cursor:pointer;
+    ">🏫</div>`,
+    iconSize:   [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+}
+
+function hiddenIcon() {
+  return L.divIcon({ className:'', html:'', iconSize:[0,0] });
+}
+
+// ── 마커 업데이트 ─────────────────────────────────────────────────────────
+function updateMarkers(year) {
+  Object.entries(mapMarkers).forEach(([id, m]) => {
+    const grade   = getGrade(id, year);
+    const sel     = id === selectedId;
+    const visible = activeGrades.size === 0 || activeGrades.has(grade);
+    m.setIcon(visible ? schoolIcon(grade, sel) : hiddenIcon());
+    if (visible && grade !== '안전') m.setZIndexOffset(500);
+    else m.setZIndexOffset(0);
+  });
+}
+
+// ── 정렬 토글 ─────────────────────────────────────────────────────────────
+function setSort(order) {
+  sortOrder = order;
+  document.getElementById('sortDesc').classList.toggle('active', order === 'desc');
+  document.getElementById('sortAsc').classList.toggle('active', order === 'asc');
+  renderList(currentYear, document.getElementById('searchInput').value);
+}
+
+// ── 필터 버튼 상태 업데이트 ──────────────────────────────────────────────
+const FILTER_BTN = { all:'f-all', '안전':'f-safe', '고위험':'f-high', '폐교위험':'f-danger' };
+const FILTER_CLS = { all:'on-all', '안전':'on-safe', '고위험':'on-high', '폐교위험':'on-danger' };
+
+function syncFilterBtns() {
+  const isAll = activeGrades.size === 0;
+  Object.entries(FILTER_BTN).forEach(([g, id]) => {
+    const btn = document.getElementById(id);
+    const active = g === 'all' ? isAll : activeGrades.has(g);
+    btn.className = 'filter-btn' + (active ? ' ' + FILTER_CLS[g] : '');
+  });
+}
+
+function toggleFilter(grade) {
+  if (grade === 'all') {
+    activeGrades.clear();
+  } else {
+    if (activeGrades.has(grade)) {
+      activeGrades.delete(grade);
+    } else {
+      activeGrades.add(grade);
+    }
+  }
+  syncFilterBtns();
+  renderList(currentYear, document.getElementById('searchInput').value);
+  updateMarkers(currentYear);
+}
+
+// ── 학교 목록 렌더 ────────────────────────────────────────────────────────
+function renderList(year, query) {
+  const q = (query || '').trim().toLowerCase();
+  const el = document.getElementById('schoolList');
+
+  let schools = Object.values(schoolMap).map(sch => ({
+    ...sch,
+    grade: getGrade(sch.id, year),
+  }));
+
+  if (activeGrades.size > 0) {
+    schools = schools.filter(s => activeGrades.has(s.grade));
+  }
+
+  if (q) {
+    schools = schools.filter(s =>
+      s.name.toLowerCase().includes(q) ||
+      (s.dong || '').toLowerCase().includes(q)
+    );
+  }
+
+  schools.sort((a, b) => {
+    const diff = sortOrder === 'desc'
+      ? GRADE_ORDER[a.grade] - GRADE_ORDER[b.grade]
+      : GRADE_ORDER[b.grade] - GRADE_ORDER[a.grade];
+    return diff !== 0 ? diff : a.name.localeCompare(b.name, 'ko');
+  });
+
+  const riskCnt = schools.filter(s => s.grade !== '안전').length;
+  document.getElementById('riskCount').textContent =
+    `${riskCnt} 학교 위험 감지`;
+
+  el.innerHTML = schools.map(s => `
+    <div class="school-card${s.id === selectedId ? ' active' : ''}"
+         onclick="selectSchool('${s.id}')">
+      <div class="card-top">
+        <span class="card-name">${s.name}</span>
+        <span class="grade-badge ${GRADE_BADGE[s.grade]}">${s.grade}</span>
+      </div>
+      <div class="card-sub">${s.dong || ''}</div>
+    </div>
+  `).join('');
+}
+
+// ── 상세 패널 렌더 ────────────────────────────────────────────────────────
+function renderDetail(id, year) {
+  const sch   = schoolMap[id];
+  const grade = getGrade(id, year);
+  const rd    = getRiskData(id, year);
+  const panel = document.getElementById('detailPanel');
+
+  // 경고 박스
+  let warnHtml = '';
+  if (grade === '폐교위험' && sch.dangerYr) {
+    warnHtml = `<div class="warning-box">⚠ ${sch.dangerYr}년부터 폐교위험 단계 진입</div>`;
+  } else if (grade === '고위험' && sch.highYr) {
+    warnHtml = `<div class="warning-box high-warn">⚠ ${sch.highYr}년부터 고위험 단계 진입</div>`;
+  }
+
+  // 시설 부족지수 + 클러스터 정보
+  let facHtml = '';
+  if (rd && rd.cn) {
+    // 추천 시설 뱃지
+    const recBadges = [rd.r1, rd.r2, rd.r3].filter(Boolean).map((r, i) => {
+      const opacity = i === 0 ? '1' : i === 1 ? '0.7' : '0.45';
+      return `<span style="opacity:${opacity};background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:#93c5fd;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;">${i+1}순위 ${r}</span>`;
+    }).join('');
+
+    facHtml = `
+      <div class="detail-section">
+        <div class="detail-section-title">군집 유형</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">${rd.cn}</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:2px;">${recBadges}</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">시설 부족 지수</div>
+        ${FAC_KEYS.map(f => {
+          const val = rd[f.key] || 0;
+          const cnt = rd[f.cnt] != null ? rd[f.cnt] : '—';
+          const pct = Math.min((val / FAC_MAX) * 100, 100).toFixed(1);
+          return `
+            <div class="fac-row">
+              <div class="fac-label-row">
+                <span class="fac-name">${f.label} <small style="color:var(--text3)">(${cnt}개소)</small></span>
+                <span class="fac-val" style="color:${f.color}">${val.toFixed(3)}</span>
+              </div>
+              <div class="fac-bar-bg">
+                <div class="fac-bar-fill"
+                     style="width:${pct}%;background:${f.color}"></div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>`;
+  }
+
+  // 신입생 최솟값 정보
+  let infoHtml = '';
+  if (sch.minStudents != null) {
+    infoHtml = `
+      <div class="detail-info-grid">
+        <div class="detail-info-cell">
+          <div class="info-label">최소 예측 신입생</div>
+          <div class="info-val" style="color:var(--danger)">${sch.minStudents}<small style="font-size:11px;font-weight:400"> 명</small></div>
+        </div>
+        <div class="detail-info-cell">
+          <div class="info-label">최소 예측 연도</div>
+          <div class="info-val">${sch.minStudentYr || '—'}</div>
+        </div>
+      </div>`;
+  }
+
+  panel.innerHTML = `
+    <div class="detail-hdr">
+      <div class="detail-label">School Detail</div>
+      <div class="detail-name">${sch.name}</div>
+      <div class="detail-dong">${sch.dong || ''}</div>
+      <span class="grade-badge detail-grade-large ${GRADE_BADGE[grade]}">${grade}</span>
+    </div>
+    ${warnHtml}
+    <div class="detail-section">
+      <div class="detail-section-title">신입생 예측 추이 (2027–2033)</div>
+      <div class="enroll-chart-wrap">
+        <canvas id="enrollCanvas"></canvas>
+      </div>
+      ${infoHtml}
+    </div>
+    ${facHtml}
+  `;
+
+  // 차트 렌더
+  if (enrollChart) { enrollChart.destroy(); enrollChart = null; }
+  const ctx = document.getElementById('enrollCanvas').getContext('2d');
+
+  const preds    = (sch.preds || []).map(v => (v == null ? null : +v.toFixed(1)));
+  const ptColors = YEARS.map(y => y === year ? '#f59e0b' : '#3b82f6');
+  const ptSizes  = YEARS.map(y => y === year ? 6 : 3);
+
+  enrollChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: YEARS.map(String),
+      datasets: [{
+        data: preds,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,0.07)',
+        borderWidth: 2,
+        pointBackgroundColor: ptColors,
+        pointRadius: ptSizes,
+        fill: true,
+        tension: 0.35,
+        spanGaps: true,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e2d4a',
+          titleColor: '#94a3b8',
+          bodyColor: '#e2e8f0',
+          padding: 8,
+          callbacks: {
+            label: ctx => `신입생 ${ctx.parsed.y != null ? ctx.parsed.y : '—'}명`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(30,45,74,0.8)' },
+          ticks: { color: '#64748b', font: { size: 10 } },
+        },
+        y: {
+          grid: { color: 'rgba(30,45,74,0.8)' },
+          ticks: { color: '#64748b', font: { size: 10 } },
+          beginAtZero: true,
+        },
+      },
+    },
+  });
+}
+
+// ── 거리 계산 (Haversine, 단위: m) ───────────────────────────────────────
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371000, r = Math.PI / 180;
+  const dLat = (lat2 - lat1) * r, dLng = (lng2 - lng1) * r;
+  const a = Math.sin(dLat/2)**2 +
+    Math.cos(lat1*r) * Math.cos(lat2*r) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ── 시설 마커 생성 ────────────────────────────────────────────────────────
+function makeFacMarker(lat, lng, type, name) {
+  const fi = FAC_ICONS[type];
+  const icon = L.divIcon({
+    className: '',
+    html: `<div title="${name}" style="
+      background:#fff;border:2.5px solid ${fi.color};
+      border-radius:50%;width:26px;height:26px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:14px;box-shadow:0 1px 5px rgba(0,0,0,.25);
+    ">${fi.emoji}</div>`,
+    iconSize:   [26, 26],
+    iconAnchor: [13, 13],
+  });
+  const m = L.marker([lat, lng], { icon, zIndexOffset: 200 }).addTo(leafMap);
+  m.bindTooltip(`<b>${type}</b> ${name}`, { direction:'top', offset:[0,-10] });
+  return m;
+}
+
+// ── 시설 초기화 ───────────────────────────────────────────────────────────
+function clearFacilities() {
+  if (radiusCircle) { radiusCircle.remove(); radiusCircle = null; }
+  facMarkers.forEach(m => m.remove());
+  facMarkers = [];
+}
+
+// ── 정적 시설 표시 (청소년·노인) ─────────────────────────────────────────
+function showStaticFacilities(lat, lng) {
+  RAW.youths.forEach(f => {   // [name, lat, lng]
+    if (haversine(lat, lng, f[1], f[2]) <= RADIUS_M) {
+      facMarkers.push(makeFacMarker(f[1], f[2], '청소년', f[0]));
+    }
+  });
+  RAW.elderlys.forEach(f => { // [name, lat, lng]
+    if (haversine(lat, lng, f[1], f[2]) <= RADIUS_M) {
+      facMarkers.push(makeFacMarker(f[1], f[2], '노인', f[0]));
+    }
+  });
+}
+
+// ── Vworld POI 검색 (유아·다문화·장애인) ─────────────────────────────────
+function vworldSearch(query, type, lat, lng) {
+  const url = `https://api.vworld.kr/req/search?service=search&request=search` +
+    `&version=2.0&crs=EPSG:4326&size=100&page=1&format=json` +
+    `&query=${encodeURIComponent(query)}&type=place` +
+    `&point=${lng},${lat}&radius=${RADIUS_M / 1000}` +
+    `&key=${VWORLD_KEY}`;
+
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      if (data.response?.status !== 'OK') return;
+      (data.response.result?.items || []).forEach(item => {
+        const iLat = parseFloat(item.point?.y);
+        const iLng = parseFloat(item.point?.x);
+        if (isNaN(iLat) || isNaN(iLng)) return;
+        if (haversine(lat, lng, iLat, iLng) <= RADIUS_M) {
+          facMarkers.push(makeFacMarker(iLat, iLng, type, item.title));
+        }
+      });
+    })
+    .catch(() => {}); // 네트워크 오류 시 조용히 무시
+}
+
+// ── 학교 선택 ─────────────────────────────────────────────────────────────
+function selectSchool(id) {
+  selectedId = id;
+  const sch = schoolMap[id];
+
+  clearFacilities();
+
+  if (sch.lat && sch.lng) {
+    leafMap.setView([sch.lat, sch.lng], 15, { animate: true });
+
+    // 700m 반경 원
+    radiusCircle = L.circle([sch.lat, sch.lng], {
+      radius: RADIUS_M,
+      color: '#3b82f6', weight: 2, dashArray: '6,4',
+      fillColor: '#3b82f6', fillOpacity: 0.05,
+    }).addTo(leafMap);
+
+    // 정적 시설 (청소년·노인)
+    showStaticFacilities(sch.lat, sch.lng);
+
+    // Vworld API 시설 (유아·다문화·장애인)
+    vworldSearch('어린이집',        '유아',   sch.lat, sch.lng);
+    vworldSearch('유치원',          '유아',   sch.lat, sch.lng);
+    vworldSearch('다문화가족지원센터','다문화', sch.lat, sch.lng);
+    vworldSearch('장애인복지관',    '장애인', sch.lat, sch.lng);
+    vworldSearch('장애인활동지원',  '장애인', sch.lat, sch.lng);
+  }
+
+  renderList(currentYear, document.getElementById('searchInput').value);
+  renderDetail(id, currentYear);
+  updateMarkers(currentYear);
+}
+
+// ── 전체 업데이트 (연도 변경) ─────────────────────────────────────────────
+function updateAll(yearIdx) {
+  currentYearIdx = yearIdx;
+  currentYear    = YEARS[yearIdx];
+
+  document.getElementById('yearDisplay').textContent = currentYear;
+  document.getElementById('yearSlider').value = yearIdx;
+
+  const dangCnt = Object.keys(schoolMap)
+    .filter(id => getGrade(id, currentYear) === '폐교위험').length;
+  document.getElementById('closureNum').textContent = dangCnt;
+
+  renderList(currentYear, document.getElementById('searchInput').value);
+  updateMarkers(currentYear);
+
+  if (selectedId) renderDetail(selectedId, currentYear);
+  updateStatCards(yearIdx);
+}
+
+// ── 재생 / 일시정지 ───────────────────────────────────────────────────────
+function togglePlay() {
+  isPlaying = !isPlaying;
+  const btn = document.getElementById('playBtn');
+  if (isPlaying) {
+    btn.textContent = '⏸';
+    btn.classList.add('playing');
+    playTimer = setInterval(() => {
+      const next = (currentYearIdx + 1) % 8;
+      updateAll(next);
+      if (next === 6) {
+        togglePlay(); // 끝에서 자동 정지
+      }
+    }, 1600);
+  } else {
+    btn.textContent = '▶';
+    btn.classList.remove('playing');
+    clearInterval(playTimer);
+  }
+}
+
+// ── 페이지 전환 ────────────────────────────────────────────────────────────
+function setPage(name) {
+  const isStats = name === 'stats';
+  document.getElementById('pageStats').style.display = isStats ? '' : 'none';
+  document.getElementById('pageMap').style.display   = isStats ? 'none' : '';
+  document.getElementById('tabStats').classList.toggle('active', isStats);
+  document.getElementById('tabMap').classList.toggle('active', !isStats);
+  if (!isStats) setTimeout(() => leafMap && leafMap.invalidateSize(), 50);
+}
+
+// ── 히스토그램 데이터 계산 (연도별 신입생 예측) ──────────────────────────
+function computeHistData(yearIdx) {
+  const cnts = new Array(7).fill(0);
+  RAW.schools.forEach(s => {
+    const preds = s[10];
+    const v = (preds && preds[yearIdx] != null) ? preds[yearIdx] : null;
+    if (v == null) return;
+    if      (v <  10) cnts[0]++;
+    else if (v <  20) cnts[1]++;
+    else if (v <  30) cnts[2]++;
+    else if (v <  40) cnts[3]++;
+    else if (v <  50) cnts[4]++;
+    else if (v < 100) cnts[5]++;
+    else              cnts[6]++;
+  });
+  return cnts;
+}
+
+// ── 통계 카드 + 히스토그램 업데이트 (연도 슬라이더와 연동) ───────────────
+let histChartInst = null;
+
+function updateStatCards(yearIdx) {
+  const d     = dangerCounts[yearIdx] || 0;
+  const h     = highCounts[yearIdx]   || 0;
+  const total = RAW.schools.length;
+  document.getElementById('statDanger').textContent = d;
+  document.getElementById('statHigh').textContent   = h;
+  document.getElementById('statSafe').textContent   = total - d - h;
+  document.getElementById('statTotal').textContent  = total;
+
+  const yr = document.getElementById('histYear');
+  if (yr) yr.textContent = YEARS[yearIdx];
+
+  if (histChartInst) {
+    histChartInst.data.datasets[0].data = computeHistData(yearIdx);
+    histChartInst.update('none');
+  }
+}
+
+// ── 통계 차트 초기화 (최초 1회) ──────────────────────────────────────────
+function initStatsCharts() {
+  const TICK  = { color:'#64748b', font:{ size:10 } };
+  const GRID  = 'rgba(30,45,74,0.6)';
+  const TIP   = { backgroundColor:'#1e2d4a', titleColor:'#94a3b8', bodyColor:'#e2e8f0', padding:8 };
+  const BINS  = ['0–9명','10–19명','20–29명','30–39명','40–49명','50–99명','100명+'];
+  const BCLRS = ['#ef4444bb','#ef4444bb','#f97316bb','#f97316bb','#22c55ebb','#22c55ebb','#22c55ebb'];
+
+  // 1) 연도별 위험 학교 수 추이 (정적)
+  new Chart(document.getElementById('trendChart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: YEARS.map(String),
+      datasets: [
+        {
+          label: '폐교위험',
+          data: dangerCounts,
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239,68,68,0.1)',
+          borderWidth: 2.5, pointRadius: 4, fill: true, tension: 0.35,
+        },
+        {
+          label: '고위험',
+          data: highCounts,
+          borderColor: '#f97316',
+          backgroundColor: 'rgba(249,115,22,0.08)',
+          borderWidth: 2.5, pointRadius: 4, fill: true, tension: 0.35,
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels:{ color:'#94a3b8', font:{ size:11 }, boxWidth:12 } },
+        tooltip: { ...TIP },
+      },
+      scales: {
+        x: { grid:{ color:GRID }, ticks: TICK },
+        y: { grid:{ color:GRID }, ticks: TICK, beginAtZero:true },
+      },
+    },
+  });
+
+  // 2) 학교별 신입생 예측 수 분포 (연도별 갱신)
+  histChartInst = new Chart(document.getElementById('histChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: BINS,
+      datasets: [{
+        label: '학교 수',
+        data: computeHistData(0),
+        backgroundColor: BCLRS,
+        borderRadius: 5, borderWidth: 0,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          ...TIP,
+          callbacks: { label: c => `${c.parsed.y}개 학교` },
+        },
+      },
+      scales: {
+        x: { grid:{ color:GRID }, ticks:{ ...TICK, maxRotation:30 } },
+        y: { grid:{ color:GRID }, ticks: TICK, beginAtZero:true },
+      },
+    },
+  });
+}
+
+// ── 슬라이더 ──────────────────────────────────────────────────────────────
+document.getElementById('yearSlider').addEventListener('input', e => {
+  if (isPlaying) togglePlay();
+  updateAll(parseInt(e.target.value));
+});
+
+// ── 검색 ──────────────────────────────────────────────────────────────────
+document.getElementById('searchInput').addEventListener('input', e => {
+  renderList(currentYear, e.target.value);
+});
+
+// ── 초기화 ────────────────────────────────────────────────────────────────
+initMap();
+initStatsCharts();
+updateAll(0);
+</script>
+</body>
+</html>
