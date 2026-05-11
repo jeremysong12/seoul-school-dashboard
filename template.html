@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Insight SEOUL · 초교 폐교 위기 예측</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+/* ── RESET ── */
+*{margin:0;padding:0;box-sizing:border-box;}
+
+:root{
+  --bg:#0a0e1a;
+  --bg2:#0d1220;
+  --card:#111827;
+  --card2:#162032;
+  --border:#1e2d4a;
+  --border2:#253552;
+  --text:#e2e8f0;
+  --text2:#94a3b8;
+  --text3:#64748b;
+  --safe:#22c55e;
+  --high:#f97316;
+  --danger:#ef4444;
+  --accent:#3b82f6;
+  --accent2:#8b5cf6;
+}
+
+body{
+  font-family:'Noto Sans KR',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+/* ── HEADER ── */
+.hdr{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:0 24px;
+  height:54px;
+  background:#060c1a;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  z-index:100;
+}
+.logo-box{
+  width:32px;height:32px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Space Mono',monospace;
+  font-weight:700;font-size:15px;color:#fff;
+  flex-shrink:0;
+}
+.hdr-title{
+  font-size:16px;font-weight:700;letter-spacing:-.4px;white-space:nowrap;
+}
+.hdr-sub{font-size:12px;font-weight:400;color:var(--text3);margin-left:2px;}
+.hdr-spacer{flex:1;}
+.hdr-year{
+  display:flex;align-items:center;gap:6px;
+  font-family:'Space Mono',monospace;font-size:11px;
+  color:var(--text3);letter-spacing:1px;
+}
+.year-num{
+  font-size:28px;font-weight:700;color:var(--accent);
+  letter-spacing:-2px;line-height:1;
+}
+
+/* ── MAIN 3-PANEL LAYOUT ── */
+.layout{
+  flex:1;
+  display:grid;
+  grid-template-columns:280px 1fr 320px;
+  overflow:hidden;
+  min-height:0;
+}
+
+/* ── LEFT SIDEBAR ── */
+.sidebar{
+  display:flex;flex-direction:column;
+  background:var(--bg2);
+  border-right:1px solid var(--border);
+  overflow:hidden;
+  min-height:0;
+}
+.search-wrap{
+  padding:12px 12px 6px;
+  flex-shrink:0;
+}
+.search-box{
+  display:flex;align-items:center;gap:8px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:8px 12px;
+}
+.search-icon{color:var(--text3);font-size:13px;flex-shrink:0;}
+.search-input{
+  flex:1;border:none;background:transparent;
+  color:var(--text);font-size:13px;
+  font-family:'Noto Sans KR',sans-serif;
+  outline:none;
+}
+.search-input::placeholder{color:var(--text3);}
+.search-box:focus-within{border-color:var(--accent);}
+
+.filter-row{
+  display:flex;gap:5px;
+  padding:0 12px 8px;
+  flex-shrink:0;
+}
+.filter-btn{
+  flex:1;
+  padding:5px 4px;
+  border-radius:6px;
+  border:1px solid var(--border2);
+  background:var(--card);
+  color:var(--text3);
+  font-size:11px;font-weight:600;
+  font-family:'Noto Sans KR',sans-serif;
+  cursor:pointer;
+  transition:all .15s;
+  white-space:nowrap;
+}
+.filter-btn:hover{color:var(--text2);border-color:var(--border2);}
+.filter-btn.on-all   {background:rgba(59,130,246,.15);border-color:var(--accent);color:var(--accent);}
+.filter-btn.on-safe  {background:rgba(34,197,94,.15);border-color:var(--safe);color:var(--safe);}
+.filter-btn.on-high  {background:rgba(249,115,22,.15);border-color:var(--high);color:var(--high);}
+.filter-btn.on-danger{background:rgba(239,68,68,.15);border-color:var(--danger);color:var(--danger);}
+
+.list-meta{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 16px 8px;
+  font-size:11px;flex-shrink:0;
+}
+.list-meta-count{color:var(--text2);font-weight:600;}
+.sort-toggle{display:flex;gap:4px;}
+.sort-btn{
+  font-size:10px;font-weight:600;padding:3px 8px;
+  border-radius:5px;border:1px solid var(--border2);
+  background:var(--card);color:var(--text3);
+  cursor:pointer;font-family:'Noto Sans KR',sans-serif;
+  transition:all .15s;
+}
+.sort-btn.active{background:rgba(59,130,246,.15);border-color:var(--accent);color:var(--accent);}
+.sort-btn:hover:not(.active){color:var(--text2);}
+
+.school-list{
+  flex:1;overflow-y:auto;
+  padding:0 8px 8px;
+}
+.school-list::-webkit-scrollbar{width:4px;}
+.school-list::-webkit-scrollbar-track{background:transparent;}
+.school-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+.school-card{
+  padding:10px 12px;
+  border-radius:8px;
+  border:1px solid transparent;
+  cursor:pointer;
+  margin-bottom:5px;
+  background:var(--card);
+  transition:border-color .15s,background .15s;
+}
+.school-card:hover{border-color:var(--border2);background:var(--card2);}
+.school-card.active{
+  border-color:var(--accent);
+  background:rgba(59,130,246,.08);
+}
+.card-top{
+  display:flex;align-items:center;
+  justify-content:space-between;gap:8px;
+  margin-bottom:3px;
+}
+.card-name{
+  font-size:13px;font-weight:600;letter-spacing:-.3px;
+  flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.card-sub{font-size:11px;color:var(--text3);}
+
+/* ── 등급 배지 ── */
+.grade-badge{
+  font-size:10px;font-weight:700;
+  padding:2px 8px;border-radius:4px;
+  white-space:nowrap;flex-shrink:0;
+  font-family:'Space Mono',monospace;letter-spacing:.3px;
+}
+.badge-safe{background:rgba(34,197,94,.12);color:var(--safe);border:1px solid rgba(34,197,94,.25);}
+.badge-high{background:rgba(249,115,22,.12);color:var(--high);border:1px solid rgba(249,115,22,.25);}
+.badge-danger{background:rgba(239,68,68,.12);color:var(--danger);border:1px solid rgba(239,68,68,.25);}
+
+/* ── MAP CENTER ── */
+.map-wrap{position:relative;overflow:hidden;}
+#map{width:100%;height:100%;}
+
+.risk-legend{
+  position:absolute;top:14px;left:14px;z-index:900;
+  background:rgba(255,255,255,.97);
+  border-radius:10px;
+  padding:12px 16px;
+  box-shadow:0 2px 16px rgba(0,0,0,.15);
+  pointer-events:none;
+  min-width:180px;
+}
+.legend-title{
+  font-size:10px;font-weight:700;color:#374151;
+  letter-spacing:.8px;text-transform:uppercase;
+  margin-bottom:9px;
+}
+.legend-row{
+  display:flex;align-items:flex-start;gap:8px;
+  margin-bottom:7px;
+}
+.legend-row:last-child{margin-bottom:0;}
+.legend-icon{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid rgba(255,255,255,.8);}
+.legend-text{}
+.legend-name{font-size:12px;font-weight:700;color:#111827;line-height:1.2;}
+.legend-desc{font-size:10px;color:#6b7280;margin-top:1px;}
+.legend-divider{border:none;border-top:1px solid #e5e7eb;margin:8px 0;}
+.legend-fac-row{display:flex;align-items:center;gap:7px;margin-bottom:5px;font-size:11px;color:#374151;}
+.legend-fac-row:last-child{margin-bottom:0;}
+.legend-fac-icon{font-size:14px;width:20px;text-align:center;}
+
+/* ── RIGHT DETAIL PANEL ── */
+.detail-panel{
+  background:var(--bg2);
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow-y:auto;
+  min-height:0;
+}
+.detail-panel::-webkit-scrollbar{width:4px;}
+.detail-panel::-webkit-scrollbar-track{background:transparent;}
+.detail-panel::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+
+.detail-empty{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  color:var(--text3);gap:10px;padding:24px;
+}
+.empty-icon{font-size:36px;opacity:.35;}
+.empty-text{font-size:13px;letter-spacing:-.2px;text-align:center;line-height:1.6;}
+
+.detail-hdr{
+  padding:16px 18px 14px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.detail-label{
+  font-size:9px;font-weight:700;color:var(--accent);
+  letter-spacing:1.2px;text-transform:uppercase;
+  margin-bottom:8px;
+}
+.detail-name{
+  font-size:17px;font-weight:700;letter-spacing:-.5px;
+  margin-bottom:3px;line-height:1.3;
+}
+.detail-dong{font-size:11px;color:var(--text3);margin-bottom:10px;}
+.detail-grade-large{
+  font-size:12px;font-weight:700;
+  padding:5px 14px;border-radius:6px;
+  display:inline-block;
+}
+
+.detail-section{
+  padding:14px 18px;
+  border-bottom:1px solid var(--border);
+}
+.detail-section:last-child{border-bottom:none;}
+.detail-section-title{
+  font-size:9px;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:1px;
+  margin-bottom:10px;
+}
+
+/* 신입생 추이 차트 */
+.enroll-chart-wrap{position:relative;height:140px;}
+
+/* 시설부담지수 */
+.fac-row{margin-bottom:10px;}
+.fac-row:last-child{margin-bottom:0;}
+.fac-label-row{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:5px;
+}
+.fac-name{font-size:11px;color:var(--text2);}
+.fac-val{
+  font-size:11px;font-weight:700;
+  font-family:'Space Mono',monospace;
+}
+.fac-bar-bg{
+  background:var(--border);border-radius:3px;
+  height:4px;overflow:hidden;
+}
+.fac-bar-fill{
+  height:100%;border-radius:3px;
+  transition:width .5s ease;
+}
+
+.detail-info-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  margin-top:2px;
+}
+.detail-info-cell{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:7px;padding:9px 12px;
+}
+.info-label{font-size:10px;color:var(--text3);margin-bottom:4px;}
+.info-val{font-size:15px;font-weight:700;font-family:'Space Mono',monospace;letter-spacing:-.5px;}
+
+.warning-box{
+  margin:12px 18px 0;
+  background:rgba(239,68,68,.06);
+  border:1px solid rgba(239,68,68,.2);
+  border-radius:8px;padding:9px 12px;
+  font-size:11px;color:var(--danger);line-height:1.5;
+}
+.warning-box.high-warn{
+  background:rgba(249,115,22,.06);
+  border-color:rgba(249,115,22,.2);
+  color:var(--high);
+}
+
+/* ── BOTTOM TIMELINE ── */
+.timeline{
+  height:62px;flex-shrink:0;
+  background:var(--card);
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;gap:16px;
+  padding:0 20px;
+}
+.play-btn{
+  width:36px;height:36px;
+  background:var(--accent);
+  border:none;border-radius:50%;
+  color:#fff;font-size:13px;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  transition:background .15s;
+}
+.play-btn:hover{background:#2563eb;}
+.play-btn.playing{background:#ef4444;}
+.play-btn.playing:hover{background:#dc2626;}
+
+.slider-wrap{flex:1;position:relative;}
+.year-slider{
+  width:100%;
+  -webkit-appearance:none;appearance:none;
+  height:4px;
+  background:var(--border);
+  border-radius:2px;outline:none;cursor:pointer;
+}
+.year-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:16px;height:16px;
+  background:var(--accent);
+  border-radius:50%;border:2px solid #fff;
+  cursor:pointer;
+  box-shadow:0 0 0 3px rgba(59,130,246,.25);
+}
+.slider-ticks{
+  display:flex;justify-content:space-between;
+  padding:0 2px;margin-top:5px;
+}
+.slider-ticks span{
+  font-size:9px;color:var(--text3);
+  font-family:'Space Mono',monospace;
+}
+
+.closure-stat{
+  font-size:9px;color:var(--text3);
+  letter-spacing:.5px;text-align:right;
+  white-space:nowrap;line-height:1.4;
+  text-transform:uppercase;
+}
+.closure-num{
+  font-size:24px;font-weight:900;
+  font-family:'Space Mono',monospace;
+  color:var(--danger);letter-spacing:-1px;
+  display:block;margin-top:1px;
+}
+
+/* ── COMBINED SINGLE-PAGE LAYOUT ── */
+.combined-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
+
+/* ── STATS STRIP (top bar with 3 columns) ── */
+.stats-strip{
+  display:flex;gap:10px;
+  padding:8px 14px;
+  height:188px;
+  flex-shrink:0;
+  border-bottom:1px solid var(--border);
+}
+
+/* 2x2 stat grid */
+.stat-grid-2x2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  grid-template-rows:1fr 1fr;
+  gap:8px;
+  flex:1;
+}
+.stat-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:8px 14px 6px;
+  position:relative;overflow:hidden;
+  transition:border-color .2s;
+}
+.stat-card:hover{border-color:var(--border2);}
+.stat-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;
+  height:3px;border-radius:10px 10px 0 0;
+}
+.stat-card.sc-danger::before{background:var(--danger);}
+.stat-card.sc-high::before  {background:var(--high);}
+.stat-card.sc-safe::before  {background:var(--safe);}
+.stat-card.sc-total::before {background:var(--accent);}
+.stat-label{
+  font-size:10px;font-weight:700;color:var(--text3);
+  letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;
+}
+.stat-num{
+  font-size:34px;font-weight:900;
+  font-family:'Space Mono',monospace;
+  letter-spacing:-2px;line-height:1;
+}
+.stat-card.sc-danger .stat-num{color:var(--danger);}
+.stat-card.sc-high   .stat-num{color:var(--high);}
+.stat-card.sc-safe   .stat-num{color:var(--safe);}
+.stat-card.sc-total  .stat-num{color:var(--accent);}
+.stat-sub{font-size:10px;color:var(--text3);margin-top:3px;}
+
+/* chart cards */
+.chart-card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px 16px;
+  display:flex;flex-direction:column;
+  flex:1;min-height:0;
+}
+.chart-card-title{
+  font-size:11px;font-weight:700;color:var(--text2);
+  letter-spacing:-.2px;margin-bottom:10px;flex-shrink:0;
+}
+.chart-canvas-wrap{flex:1;position:relative;min-height:0;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="logo-box">S</div>
+  <div class="hdr-title">
+    Insight SEOUL<span class="hdr-sub"> | 초교 폐교 위기 예측</span>
+  </div>
+  <div class="hdr-spacer"></div>
+  <div class="hdr-year">
+    YEAR&nbsp;<span id="yearDisplay" class="year-num">2027</span>
+  </div>
+</header>
+
+<!-- SINGLE PAGE: 통계 + 지도 통합 -->
+<div class="combined-wrap">
+
+<!-- 상단: 통계 스트립 (3 columns) -->
+<div class="stats-strip">
+  <div class="stat-grid-2x2">
+    <div class="stat-card sc-danger">
+      <div class="stat-label">폐교위험</div>
+      <div id="statDanger" class="stat-num">0</div>
+      <div class="stat-sub">신입생 17명 미만</div>
+    </div>
+    <div class="stat-card sc-high">
+      <div class="stat-label">고위험</div>
+      <div id="statHigh" class="stat-num">0</div>
+      <div class="stat-sub">신입생 17~40명</div>
+    </div>
+    <div class="stat-card sc-safe">
+      <div class="stat-label">안전</div>
+      <div id="statSafe" class="stat-num">0</div>
+      <div class="stat-sub">신입생 40명 이상</div>
+    </div>
+    <div class="stat-card sc-total">
+      <div class="stat-label">서울 공립 초등학교</div>
+      <div id="statTotal" class="stat-num">565</div>
+      <div class="stat-sub">2024년 기준 전체</div>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-title">학교별 신입생 예측 수 분포 · <span id="histYear">2027</span>년</div>
+    <div class="chart-canvas-wrap"><canvas id="histChart"></canvas></div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-card-title">연도별 위험 학교 수 추이 (2027–2033)</div>
+    <div class="chart-canvas-wrap"><canvas id="trendChart"></canvas></div>
+  </div>
+</div>
+
+<!-- 하단: 3패널 지도 -->
+<div class="layout">
+
+  <!-- LEFT: 학교 목록 -->
+  <aside class="sidebar">
+    <div class="search-wrap">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input id="searchInput" class="search-input" type="text" placeholder="학교 검색...">
+      </div>
+    </div>
+    <div class="filter-row">
+      <button class="filter-btn on-all"    id="f-all"    onclick="toggleFilter('all')">전체</button>
+      <button class="filter-btn"           id="f-safe"   onclick="toggleFilter('안전')">안전</button>
+      <button class="filter-btn"           id="f-high"   onclick="toggleFilter('고위험')">고위험</button>
+      <button class="filter-btn"           id="f-danger" onclick="toggleFilter('폐교위험')">폐교위험</button>
+    </div>
+    <div class="list-meta">
+      <span class="list-meta-count" id="riskCount">— 학교 위험 감지</span>
+      <div class="sort-toggle">
+        <button class="sort-btn active" id="sortDesc" onclick="setSort('desc')">높은순</button>
+        <button class="sort-btn"        id="sortAsc"  onclick="setSort('asc')">낮은순</button>
+      </div>
+    </div>
+    <div id="schoolList" class="school-list"></div>
+  </aside>
+
+  <!-- CENTER: 지도 -->
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="risk-legend">
+      <div class="legend-title">Risk Legend</div>
+      <div class="legend-row">
+        <div class="legend-icon" style="background:#22c55e">🏫</div>
+        <div class="legend-text">
+          <div class="legend-name">안전</div>
+          <div class="legend-desc">신입생 예측 최솟값 40명 이상</div>
+        </div>
+      </div>
+      <div class="legend-row">
+        <div class="legend-icon" style="background:#f97316">🏫</div>
+        <div class="legend-text">
+          <div class="legend-name">고위험</div>
+          <div class="legend-desc">신입생 예측 최솟값 17~40명</div>
+        </div>
+      </div>
+      <div class="legend-row">
+        <div class="legend-icon" style="background:#ef4444">🏫</div>
+        <div class="legend-text">
+          <div class="legend-name">폐교위험</div>
+          <div class="legend-desc">신입생 예측 최솟값 17명 미만</div>
+        </div>
+      </div>
+      <hr class="legend-divider">
+      <div class="legend-title">시설 아이콘</div>
+      <div class="legend-fac-row"><span class="legend-fac-icon">👶</span>유아 시설</div>
+      <div class="legend-fac-row"><span class="legend-fac-icon">🧒</span>청소년 시설</div>
+      <div class="legend-fac-row"><span class="legend-fac-icon">👴</span>노인 시설</div>
+      <div class="legend-fac-row"><span class="legend-fac-icon">🌏</span>다문화 시설</div>
+      <div class="legend-fac-row"><span class="legend-fac-icon">♿</span>장애인 시설</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: 상세 패널 -->
+  <aside class="detail-panel" id="detailPanel">
+    <div class="detail-empty">
+      <div class="empty-icon">🏫</div>
+      <div class="empty-text">학교를 선택하면<br>상세 지표를 확인할 수 있습니다</div>
+    </div>
+  </aside>
+
+</div>
+</div><!-- /combined-wrap -->
+
+<!-- BOTTOM: 타임라인 -->
+<footer class="timeline">
+  <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+  <div class="slider-wrap">
+    <input type="range" id="yearSlider" class="year-slider"
+           min="0" max="6" value="0" step="1">
+    <div class="slider-ticks">
+      <span>2027</span><span>2028</span><span>2029</span><span>2030</span>
+      <span>2031</span><span>2032</span><span>2033</span>
+    </div>
+  </div>
+  <div class="closure-stat">
+    Total Closures
+    <span id="closureNum" class="closure-num">0</span>
+    <small style="font-size:9px;">폐교위험 학교</small>
+  </div>
+</footer>
+
+<script>
+/*__CLUSTER_META__*/
+/*__SCHOOL_CLUSTER__*/
+/*__RAW__*/
+/*__TREND_COUNTS__*/
+/*__DONG_GEO__*/
+
+// ── 상수 ──────────────────────────────────────────────────────────────────
+const YEARS = [2027,2028,2029,2030,2031,2032,2033];
+
+const GRADE_COLOR  = {'폐교위험':'#ef4444','고위험':'#f97316','안전':'#22c55e'};
+const GRADE_ORDER  = {'폐교위험':0,'고위험':1,'안전':2};
+const GRADE_BADGE  = {'폐교위험':'badge-danger','고위험':'badge-high','안전':'badge-safe'};
+
+const FAC_KEYS = [
+  {key:'yi', label:'유아',   color:'#3b82f6', cnt:'yc'},
+  {key:'ci', label:'청소년', color:'#f97316', cnt:'cc'},
+  {key:'oi', label:'노인',   color:'#22c55e', cnt:'oc'},
+  {key:'mi', label:'다문화', color:'#8b5cf6', cnt:'mc'},
+  {key:'di', label:'장애인', color:'#ef4444', cnt:'dc'},
+];
+const FAC_MAX = 5.0;
+
+const FAC_ICONS = {
+  '유아':   {emoji:'👶', color:'#3b82f6'},
+  '청소년': {emoji:'🧒', color:'#f97316'},
+  '노인':   {emoji:'👴', color:'#22c55e'},
+  '다문화': {emoji:'🌏', color:'#8b5cf6'},
+  '장애인': {emoji:'♿', color:'#ef4444'},
+};
+const VWORLD_KEY = '2755317D-E3CD-3CAE-A56D-4F01917C7757';
+const RADIUS_M   = 1500;  // Vworld POI 검색 반경 (동 경계 안에서 2차 필터)
+
+// ── 학교 맵 빌드 ──────────────────────────────────────────────────────────
+// schools[i] = [id, name, finalGrade, dangerYr, highYr, lat, lng, dong, minStu, minStuYr, preds, dongNm]
+const schoolMap = {};
+RAW.schools.forEach(s => {
+  schoolMap[s[0]] = {
+    id:          s[0],
+    name:        s[1],
+    finalGrade:  s[2],
+    dangerYr:    s[3],
+    highYr:      s[4],
+    lat:         s[5],
+    lng:         s[6],
+    dong:        s[7],
+    minStudents: s[8],
+    minStudentYr:s[9],
+    preds:       s[10],
+    dongNm:      s[11],  // 행정동 이름 (동 경계 필터용)
+  };
+});
+
+// ── 상태 ──────────────────────────────────────────────────────────────────
+let currentYearIdx = 0;
+let currentYear    = 2027;
+let selectedId     = null;
+let activeGrades   = new Set();
+let sortOrder      = 'desc';  // 'desc': 높은순, 'asc': 낮은순
+let isPlaying      = false;
+let playTimer      = null;
+let enrollChart    = null;
+let leafMap        = null;
+const mapMarkers   = {};
+let dongPolygon    = null;
+let facMarkers     = [];
+
+// ── 연도별 등급 조회 ──────────────────────────────────────────────────────
+function getGrade(id, year) {
+  const rd = RAW.risk[String(year)];
+  return (rd && rd[id]) ? rd[id].g : '안전';
+}
+function getRiskData(id, year) {
+  const rd = RAW.risk[String(year)];
+  return (rd && rd[id]) ? rd[id] : null;
+}
+
+// ── 지도 초기화 ───────────────────────────────────────────────────────────
+function initMap() {
+  const seoulBounds = L.latLngBounds(
+    [37.413, 126.734],   // 남서
+    [37.715, 127.269]    // 북동
+  );
+  leafMap = L.map('map', {
+    center: [37.5630, 126.986],
+    zoom: 12,
+    minZoom: 11,
+    maxBounds: seoulBounds,
+    maxBoundsViscosity: 0.85,
+    zoomControl: true,
+  });
+
+  L.tileLayer('https://api.vworld.kr/req/wmts/1.0.0/2755317D-E3CD-3CAE-A56D-4F01917C7757/Base/{z}/{y}/{x}.png', {
+    attribution: '© 국토지리정보원',
+    maxZoom: 18,
+    tileSize: 256,
+  }).addTo(leafMap);
+
+  Object.values(schoolMap).forEach(sch => {
+    if (!sch.lat || !sch.lng) return;
+    const m = L.marker([sch.lat, sch.lng], { icon: schoolIcon('안전', false) })
+      .addTo(leafMap);
+    m.on('click', () => selectSchool(sch.id));
+    mapMarkers[sch.id] = m;
+  });
+}
+
+function schoolIcon(grade, selected) {
+  const color = GRADE_COLOR[grade];
+  const size  = selected ? 34 : 26;
+  return L.divIcon({
+    className: '',
+    html: `<div style="
+      background:${color};width:${size}px;height:${size}px;
+      border-radius:50%;border:2.5px solid rgba(255,255,255,0.9);
+      display:flex;align-items:center;justify-content:center;
+      font-size:${selected ? 16 : 13}px;
+      box-shadow:0 2px 8px rgba(0,0,0,.35);cursor:pointer;
+    ">🏫</div>`,
+    iconSize:   [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
+}
+
+function hiddenIcon() {
+  return L.divIcon({ className:'', html:'', iconSize:[0,0] });
+}
+
+// ── 마커 업데이트 ─────────────────────────────────────────────────────────
+function updateMarkers(year) {
+  Object.entries(mapMarkers).forEach(([id, m]) => {
+    const grade   = getGrade(id, year);
+    const sel     = id === selectedId;
+    const visible = activeGrades.size === 0 || activeGrades.has(grade);
+    m.setIcon(visible ? schoolIcon(grade, sel) : hiddenIcon());
+    if (visible && grade !== '안전') m.setZIndexOffset(500);
+    else m.setZIndexOffset(0);
+  });
+}
+
+// ── 정렬 토글 ─────────────────────────────────────────────────────────────
+function setSort(order) {
+  sortOrder = order;
+  document.getElementById('sortDesc').classList.toggle('active', order === 'desc');
+  document.getElementById('sortAsc').classList.toggle('active', order === 'asc');
+  renderList(currentYear, document.getElementById('searchInput').value);
+}
+
+// ── 필터 버튼 상태 업데이트 ──────────────────────────────────────────────
+const FILTER_BTN = { all:'f-all', '안전':'f-safe', '고위험':'f-high', '폐교위험':'f-danger' };
+const FILTER_CLS = { all:'on-all', '안전':'on-safe', '고위험':'on-high', '폐교위험':'on-danger' };
+
+function syncFilterBtns() {
+  const isAll = activeGrades.size === 0;
+  Object.entries(FILTER_BTN).forEach(([g, id]) => {
+    const btn = document.getElementById(id);
+    const active = g === 'all' ? isAll : activeGrades.has(g);
+    btn.className = 'filter-btn' + (active ? ' ' + FILTER_CLS[g] : '');
+  });
+}
+
+function toggleFilter(grade) {
+  if (grade === 'all') {
+    activeGrades.clear();
+  } else {
+    if (activeGrades.has(grade)) {
+      activeGrades.delete(grade);
+    } else {
+      activeGrades.add(grade);
+    }
+  }
+  syncFilterBtns();
+  renderList(currentYear, document.getElementById('searchInput').value);
+  updateMarkers(currentYear);
+}
+
+// ── 학교 목록 렌더 ────────────────────────────────────────────────────────
+function renderList(year, query) {
+  const q = (query || '').trim().toLowerCase();
+  const el = document.getElementById('schoolList');
+
+  let schools = Object.values(schoolMap).map(sch => ({
+    ...sch,
+    grade: getGrade(sch.id, year),
+  }));
+
+  if (activeGrades.size > 0) {
+    schools = schools.filter(s => activeGrades.has(s.grade));
+  }
+
+  if (q) {
+    schools = schools.filter(s =>
+      s.name.toLowerCase().includes(q) ||
+      (s.dong || '').toLowerCase().includes(q)
+    );
+  }
+
+  schools.sort((a, b) => {
+    const diff = sortOrder === 'desc'
+      ? GRADE_ORDER[a.grade] - GRADE_ORDER[b.grade]
+      : GRADE_ORDER[b.grade] - GRADE_ORDER[a.grade];
+    return diff !== 0 ? diff : a.name.localeCompare(b.name, 'ko');
+  });
+
+  const riskCnt = schools.filter(s => s.grade !== '안전').length;
+  document.getElementById('riskCount').textContent =
+    `${riskCnt} 학교 위험 감지`;
+
+  el.innerHTML = schools.map(s => `
+    <div class="school-card${s.id === selectedId ? ' active' : ''}"
+         onclick="selectSchool('${s.id}')">
+      <div class="card-top">
+        <span class="card-name">${s.name}</span>
+        <span class="grade-badge ${GRADE_BADGE[s.grade]}">${s.grade}</span>
+      </div>
+      <div class="card-sub">${s.dong || ''}</div>
+    </div>
+  `).join('');
+}
+
+// ── 경고 박스 HTML 생성 (2026 이전 = 이미 위험) ─────────────────────────
+function buildWarnHtml(grade, sch) {
+  if (grade === '폐교위험' && sch.dangerYr) {
+    const label = sch.dangerYr <= 2026
+      ? '이미 폐교위험 단계'
+      : `${sch.dangerYr}년부터 폐교위험 단계 진입`;
+    return `<div class="warning-box">⚠ ${label}</div>`;
+  }
+  if (grade === '고위험' && sch.highYr) {
+    const label = sch.highYr <= 2026
+      ? '이미 고위험 단계'
+      : `${sch.highYr}년부터 고위험 단계 진입`;
+    return `<div class="warning-box high-warn">⚠ ${label}</div>`;
+  }
+  return '';
+}
+
+// ── 연도 변경 시 상세 패널 경량 업데이트 (차트 포인트 + 등급 뱃지만 변경) ──
+function updateDetailYear(year) {
+  if (!enrollChart || !selectedId) return;
+  const sch = schoolMap[selectedId];
+  const grade = getGrade(selectedId, year);
+
+  // 차트 포인트 하이라이트 업데이트 (애니메이션 없이)
+  enrollChart.data.datasets[0].pointBackgroundColor = YEARS.map(y => y === year ? '#f59e0b' : '#3b82f6');
+  enrollChart.data.datasets[0].pointRadius = YEARS.map(y => y === year ? 6 : 3);
+  enrollChart.update('none');
+
+  // 등급 뱃지 업데이트
+  const badgeEl = document.querySelector('#detailPanel .detail-grade-large');
+  if (badgeEl) {
+    badgeEl.className = `grade-badge detail-grade-large ${GRADE_BADGE[grade]}`;
+    badgeEl.textContent = grade;
+  }
+
+  // 경고 텍스트 업데이트
+  const warnEl = document.getElementById('detailWarning');
+  if (warnEl) warnEl.innerHTML = buildWarnHtml(grade, sch);
+}
+
+// ── 상세 패널 렌더 ────────────────────────────────────────────────────────
+function renderDetail(id, year) {
+  const sch   = schoolMap[id];
+  const grade = getGrade(id, year);
+  const rd    = getRiskData(id, year);
+  const panel = document.getElementById('detailPanel');
+
+  // 경고 박스
+  let warnHtml = buildWarnHtml(grade, sch);
+
+  // 시설 부족지수 + 클러스터 정보
+  let facHtml = '';
+  if (rd && rd.cn) {
+    // 추천 시설 뱃지
+    const recBadges = [rd.r1, rd.r2, rd.r3].filter(Boolean).map((r, i) => {
+      const opacity = i === 0 ? '1' : i === 1 ? '0.7' : '0.45';
+      return `<span style="opacity:${opacity};background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:#93c5fd;font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;">${i+1}순위 ${r}</span>`;
+    }).join('');
+
+    facHtml = `
+      <div class="detail-section">
+        <div class="detail-section-title">군집 유형</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">${rd.cn}</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:2px;">${recBadges}</div>
+      </div>
+      <div class="detail-section">
+        <div class="detail-section-title">시설 부족 지수</div>
+        ${FAC_KEYS.map(f => {
+          const val = rd[f.key] || 0;
+          const cnt = rd[f.cnt] != null ? rd[f.cnt] : '—';
+          const pct = Math.min((val / FAC_MAX) * 100, 100).toFixed(1);
+          return `
+            <div class="fac-row">
+              <div class="fac-label-row">
+                <span class="fac-name">${f.label} <small style="color:var(--text3)">(${cnt}개소)</small></span>
+                <span class="fac-val" style="color:${f.color}">${val.toFixed(3)}</span>
+              </div>
+              <div class="fac-bar-bg">
+                <div class="fac-bar-fill"
+                     style="width:${pct}%;background:${f.color}"></div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>`;
+  }
+
+  // 신입생 최솟값 정보
+  let infoHtml = '';
+  if (sch.minStudents != null) {
+    infoHtml = `
+      <div class="detail-info-grid">
+        <div class="detail-info-cell">
+          <div class="info-label">최소 예측 신입생</div>
+          <div class="info-val" style="color:var(--danger)">${sch.minStudents}<small style="font-size:11px;font-weight:400"> 명</small></div>
+        </div>
+        <div class="detail-info-cell">
+          <div class="info-label">최소 예측 연도</div>
+          <div class="info-val">${sch.minStudentYr || '—'}</div>
+        </div>
+      </div>`;
+  }
+
+  panel.innerHTML = `
+    <div class="detail-hdr">
+      <div class="detail-label">School Detail</div>
+      <div class="detail-name">${sch.name}</div>
+      <div class="detail-dong">${sch.dong || ''}</div>
+      <span class="grade-badge detail-grade-large ${GRADE_BADGE[grade]}">${grade}</span>
+    </div>
+    <div id="detailWarning">${warnHtml}</div>
+    <div class="detail-section">
+      <div class="detail-section-title">신입생 예측 추이 (2027–2033)</div>
+      <div class="enroll-chart-wrap">
+        <canvas id="enrollCanvas"></canvas>
+      </div>
+      ${infoHtml}
+    </div>
+    ${facHtml}
+  `;
+
+  // 차트 렌더
+  if (enrollChart) { enrollChart.destroy(); enrollChart = null; }
+  const ctx = document.getElementById('enrollCanvas').getContext('2d');
+
+  const preds    = (sch.preds || []).map(v => (v == null ? null : +v.toFixed(1)));
+  const ptColors = YEARS.map(y => y === year ? '#f59e0b' : '#3b82f6');
+  const ptSizes  = YEARS.map(y => y === year ? 6 : 3);
+
+  enrollChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: YEARS.map(String),
+      datasets: [{
+        data: preds,
+        borderColor: '#3b82f6',
+        backgroundColor: 'rgba(59,130,246,0.07)',
+        borderWidth: 2,
+        pointBackgroundColor: ptColors,
+        pointRadius: ptSizes,
+        fill: true,
+        tension: 0.35,
+        spanGaps: true,
+      }],
+    },
+    options: {
+      animation: false,
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e2d4a',
+          titleColor: '#94a3b8',
+          bodyColor: '#e2e8f0',
+          padding: 8,
+          callbacks: {
+            label: ctx => `신입생 ${ctx.parsed.y != null ? ctx.parsed.y : '—'}명`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(30,45,74,0.8)' },
+          ticks: { color: '#64748b', font: { size: 10 } },
+        },
+        y: {
+          grid: { color: 'rgba(30,45,74,0.8)' },
+          ticks: { color: '#64748b', font: { size: 10 } },
+          beginAtZero: false,
+        },
+      },
+    },
+  });
+}
+
+// ── 거리 계산 (Haversine, 단위: m) ───────────────────────────────────────
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371000, r = Math.PI / 180;
+  const dLat = (lat2 - lat1) * r, dLng = (lng2 - lng1) * r;
+  const a = Math.sin(dLat/2)**2 +
+    Math.cos(lat1*r) * Math.cos(lat2*r) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ── 시설 마커 생성 ────────────────────────────────────────────────────────
+function makeFacMarker(lat, lng, type, name) {
+  const fi = FAC_ICONS[type];
+  const icon = L.divIcon({
+    className: '',
+    html: `<div title="${name}" style="
+      background:#fff;border:2.5px solid ${fi.color};
+      border-radius:50%;width:26px;height:26px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:14px;box-shadow:0 1px 5px rgba(0,0,0,.25);
+    ">${fi.emoji}</div>`,
+    iconSize:   [26, 26],
+    iconAnchor: [13, 13],
+  });
+  const m = L.marker([lat, lng], { icon, zIndexOffset: 200 }).addTo(leafMap);
+  m.bindTooltip(`<b>${type}</b> ${name}`, { direction:'top', offset:[0,-10] });
+  return m;
+}
+
+// ── 시설 초기화 ───────────────────────────────────────────────────────────
+function clearFacilities() {
+  if (dongPolygon) { dongPolygon.remove(); dongPolygon = null; }
+  facMarkers.forEach(m => m.remove());
+  facMarkers = [];
+}
+
+// ── 동 경계 폴리곤 표시 ───────────────────────────────────────────────────
+function showDongPolygon(dongNm) {
+  const geom = DONG_GEO[dongNm];
+  if (!geom) return;
+  dongPolygon = L.geoJSON(geom, {
+    style: {
+      color: '#3b82f6', weight: 2, dashArray: '6,4',
+      fillColor: '#3b82f6', fillOpacity: 0.06,
+    }
+  }).addTo(leafMap);
+}
+
+// ── 정적 시설 표시 (청소년·노인) — 동명 매칭 ────────────────────────────
+function showStaticFacilities(dongNm) {
+  RAW.youths.forEach(f => {    // [name, lat, lng, dong_nm]
+    if (f[3] === dongNm) facMarkers.push(makeFacMarker(f[1], f[2], '청소년', f[0]));
+  });
+  RAW.elderlys.forEach(f => {  // [name, lat, lng, dong_nm]
+    if (f[3] === dongNm) facMarkers.push(makeFacMarker(f[1], f[2], '노인', f[0]));
+  });
+}
+
+// ── Vworld POI 검색 (유아·다문화·장애인) ─────────────────────────────────
+function vworldSearch(query, type, lat, lng) {
+  const url = `https://api.vworld.kr/req/search?service=search&request=search` +
+    `&version=2.0&crs=EPSG:4326&size=100&page=1&format=json` +
+    `&query=${encodeURIComponent(query)}&type=place` +
+    `&point=${lng},${lat}&radius=${RADIUS_M / 1000}` +
+    `&key=${VWORLD_KEY}`;
+
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      if (data.response?.status !== 'OK') return;
+      (data.response.result?.items || []).forEach(item => {
+        const iLat = parseFloat(item.point?.y);
+        const iLng = parseFloat(item.point?.x);
+        if (isNaN(iLat) || isNaN(iLng)) return;
+        if (haversine(lat, lng, iLat, iLng) <= RADIUS_M) {
+          facMarkers.push(makeFacMarker(iLat, iLng, type, item.title));
+        }
+      });
+    })
+    .catch(() => {}); // 네트워크 오류 시 조용히 무시
+}
+
+// ── 학교 선택 ─────────────────────────────────────────────────────────────
+function selectSchool(id) {
+  selectedId = id;
+  const sch = schoolMap[id];
+
+  clearFacilities();
+
+  if (sch.lat && sch.lng) {
+    leafMap.setView([sch.lat, sch.lng], 15, { animate: true });
+
+    if (sch.dongNm) {
+      // 동 경계 폴리곤 표시
+      showDongPolygon(sch.dongNm);
+      // 정적 시설 (청소년·노인) — 동명 매칭
+      showStaticFacilities(sch.dongNm);
+      // Vworld POI (유아·다문화·장애인) — 반경 검색 후 동 내부만 표시
+      vworldSearch('어린이집',         '유아',   sch.lat, sch.lng);
+      vworldSearch('유치원',           '유아',   sch.lat, sch.lng);
+      vworldSearch('다문화가족지원센터','다문화', sch.lat, sch.lng);
+      vworldSearch('장애인복지관',     '장애인', sch.lat, sch.lng);
+      vworldSearch('장애인활동지원',   '장애인', sch.lat, sch.lng);
+    }
+  }
+
+  renderList(currentYear, document.getElementById('searchInput').value);
+  renderDetail(id, currentYear);
+  updateMarkers(currentYear);
+}
+
+// ── 전체 업데이트 (연도 변경) ─────────────────────────────────────────────
+function updateAll(yearIdx) {
+  currentYearIdx = yearIdx;
+  currentYear    = YEARS[yearIdx];
+
+  document.getElementById('yearDisplay').textContent = currentYear;
+  document.getElementById('yearSlider').value = yearIdx;
+
+  const dangCnt = Object.keys(schoolMap)
+    .filter(id => getGrade(id, currentYear) === '폐교위험').length;
+  document.getElementById('closureNum').textContent = dangCnt;
+
+  renderList(currentYear, document.getElementById('searchInput').value);
+  updateMarkers(currentYear);
+
+  if (selectedId) updateDetailYear(currentYear);
+  updateStatCards(yearIdx);
+}
+
+// ── 재생 / 일시정지 ───────────────────────────────────────────────────────
+function togglePlay() {
+  isPlaying = !isPlaying;
+  const btn = document.getElementById('playBtn');
+  if (isPlaying) {
+    btn.textContent = '⏸';
+    btn.classList.add('playing');
+    playTimer = setInterval(() => {
+      const next = (currentYearIdx + 1) % 8;
+      updateAll(next);
+      if (next === 6) {
+        togglePlay(); // 끝에서 자동 정지
+      }
+    }, 1600);
+  } else {
+    btn.textContent = '▶';
+    btn.classList.remove('playing');
+    clearInterval(playTimer);
+  }
+}
+
+// ── 페이지 전환 (탭 제거 후 no-op) ──────────────────────────────────────
+function setPage(name) {
+  setTimeout(() => leafMap && leafMap.invalidateSize(), 50);
+}
+
+// ── 히스토그램 데이터 계산 (연도별 신입생 예측) ──────────────────────────
+function computeHistData(yearIdx) {
+  const cnts = new Array(7).fill(0);
+  RAW.schools.forEach(s => {
+    const preds = s[10];
+    const v = (preds && preds[yearIdx] != null) ? preds[yearIdx] : null;
+    if (v == null) return;
+    if      (v <  10) cnts[0]++;
+    else if (v <  20) cnts[1]++;
+    else if (v <  30) cnts[2]++;
+    else if (v <  40) cnts[3]++;
+    else if (v <  50) cnts[4]++;
+    else if (v < 100) cnts[5]++;
+    else              cnts[6]++;
+  });
+  return cnts;
+}
+
+// ── 통계 카드 + 히스토그램 업데이트 (연도 슬라이더와 연동) ───────────────
+let histChartInst = null;
+
+function updateStatCards(yearIdx) {
+  const d     = dangerCounts[yearIdx] || 0;
+  const h     = highCounts[yearIdx]   || 0;
+  const total = RAW.schools.length;
+  document.getElementById('statDanger').textContent = d;
+  document.getElementById('statHigh').textContent   = h;
+  document.getElementById('statSafe').textContent   = total - d - h;
+  document.getElementById('statTotal').textContent  = total;
+
+  const yr = document.getElementById('histYear');
+  if (yr) yr.textContent = YEARS[yearIdx];
+
+  if (histChartInst) {
+    histChartInst.data.datasets[0].data = computeHistData(yearIdx);
+    histChartInst.update('none');
+  }
+}
+
+// ── 통계 차트 초기화 (최초 1회) ──────────────────────────────────────────
+function initStatsCharts() {
+  const TICK  = { color:'#64748b', font:{ size:10 } };
+  const GRID  = 'rgba(30,45,74,0.6)';
+  const TIP   = { backgroundColor:'#1e2d4a', titleColor:'#94a3b8', bodyColor:'#e2e8f0', padding:8 };
+  const BINS  = ['0–9명','10–19명','20–29명','30–39명','40–49명','50–99명','100명+'];
+  const BCLRS = ['#ef4444bb','#ef4444bb','#f97316bb','#f97316bb','#22c55ebb','#22c55ebb','#22c55ebb'];
+
+  // 1) 연도별 위험 학교 수 추이 (정적)
+  new Chart(document.getElementById('trendChart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: YEARS.map(String),
+      datasets: [
+        {
+          label: '폐교위험',
+          data: dangerCounts,
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239,68,68,0.1)',
+          borderWidth: 2.5, pointRadius: 4, fill: true, tension: 0.35,
+        },
+        {
+          label: '고위험',
+          data: highCounts,
+          borderColor: '#f97316',
+          backgroundColor: 'rgba(249,115,22,0.08)',
+          borderWidth: 2.5, pointRadius: 4, fill: true, tension: 0.35,
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels:{ color:'#94a3b8', font:{ size:11 }, boxWidth:12 } },
+        tooltip: { ...TIP },
+      },
+      scales: {
+        x: { grid:{ color:GRID }, ticks: TICK },
+        y: { grid:{ color:GRID }, ticks: TICK, beginAtZero:false },
+      },
+    },
+  });
+
+  // 2) 학교별 신입생 예측 수 분포 (연도별 갱신)
+  histChartInst = new Chart(document.getElementById('histChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: BINS,
+      datasets: [{
+        label: '학교 수',
+        data: computeHistData(0),
+        backgroundColor: BCLRS,
+        borderRadius: 5, borderWidth: 0,
+        barPercentage: 0.5, categoryPercentage: 0.7,
+      }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          ...TIP,
+          callbacks: { label: c => `${c.parsed.y}개 학교` },
+        },
+      },
+      scales: {
+        x: { grid:{ color:GRID }, ticks:{ ...TICK, maxRotation:30 } },
+        y: { grid:{ color:GRID }, ticks: TICK, beginAtZero:true },
+      },
+    },
+  });
+}
+
+// ── 슬라이더 ──────────────────────────────────────────────────────────────
+document.getElementById('yearSlider').addEventListener('input', e => {
+  if (isPlaying) togglePlay();
+  updateAll(parseInt(e.target.value));
+});
+
+// ── 검색 ──────────────────────────────────────────────────────────────────
+document.getElementById('searchInput').addEventListener('input', e => {
+  renderList(currentYear, e.target.value);
+});
+
+// ── 초기화 ────────────────────────────────────────────────────────────────
+initMap();
+initStatsCharts();
+updateAll(0);
+</script>
+</body>
+</html>
