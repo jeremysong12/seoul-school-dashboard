@@ -1165,11 +1165,13 @@ function selectSchool(id) {
     if (sch.dongNm) {
       // 동 경계 폴리곤 표시
       showDongPolygon(sch.dongNm);
-      // 정적 시설 (청소년·노인) — 동명 매칭
-      showStaticFacilities(sch.dongNm);
-      // Vworld POI (유아·다문화·장애인) — 반경 검색 후 동 내부만 표시
+      // Vworld POI — 전체 시설 유형 검색
       vworldSearch('어린이집',         '유아',   sch.lat, sch.lng);
       vworldSearch('유치원',           '유아',   sch.lat, sch.lng);
+      vworldSearch('청소년센터',       '청소년', sch.lat, sch.lng);
+      vworldSearch('지역아동센터',     '청소년', sch.lat, sch.lng);
+      vworldSearch('노인복지관',       '노인',   sch.lat, sch.lng);
+      vworldSearch('경로당',           '노인',   sch.lat, sch.lng);
       vworldSearch('다문화가족지원센터','다문화', sch.lat, sch.lng);
       vworldSearch('장애인복지관',     '장애인', sch.lat, sch.lng);
       vworldSearch('장애인활동지원',   '장애인', sch.lat, sch.lng);
