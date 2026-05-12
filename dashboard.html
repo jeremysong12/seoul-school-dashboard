@@ -1128,28 +1128,35 @@ function showStaticFacilities(dongNm) {
   });
 }
 
-// ── Vworld POI 검색 (유아·다문화·장애인) ─────────────────────────────────
+// ── Vworld POI 검색 — JSONP (GitHub Pages CORS 우회) ─────────────────────
 function vworldSearch(query, type, lat, lng) {
+  const cbName = '_vw_' + Math.random().toString(36).slice(2);
+
+  window[cbName] = function(data) {
+    delete window[cbName];
+    document.getElementById(cbName)?.remove();
+    if (data.response?.status !== 'OK') return;
+    (data.response.result?.items || []).forEach(item => {
+      const iLat = parseFloat(item.point?.y);
+      const iLng = parseFloat(item.point?.x);
+      if (isNaN(iLat) || isNaN(iLng)) return;
+      if (haversine(lat, lng, iLat, iLng) <= RADIUS_M) {
+        facMarkers.push(makeFacMarker(iLat, iLng, type, item.title));
+      }
+    });
+  };
+
   const url = `https://api.vworld.kr/req/search?service=search&request=search` +
     `&version=2.0&crs=EPSG:4326&size=100&page=1&format=json` +
     `&query=${encodeURIComponent(query)}&type=place` +
     `&point=${lng},${lat}&radius=${RADIUS_M / 1000}` +
-    `&key=${VWORLD_KEY}`;
+    `&key=${VWORLD_KEY}&callback=${cbName}`;
 
-  fetch(url)
-    .then(r => r.json())
-    .then(data => {
-      if (data.response?.status !== 'OK') return;
-      (data.response.result?.items || []).forEach(item => {
-        const iLat = parseFloat(item.point?.y);
-        const iLng = parseFloat(item.point?.x);
-        if (isNaN(iLat) || isNaN(iLng)) return;
-        if (haversine(lat, lng, iLat, iLng) <= RADIUS_M) {
-          facMarkers.push(makeFacMarker(iLat, iLng, type, item.title));
-        }
-      });
-    })
-    .catch(() => {}); // 네트워크 오류 시 조용히 무시
+  const script = document.createElement('script');
+  script.id = cbName;
+  script.src = url;
+  script.onerror = () => { delete window[cbName]; script.remove(); };
+  document.head.appendChild(script);
 }
 
 // ── 학교 선택 ─────────────────────────────────────────────────────────────
