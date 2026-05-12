@@ -366,6 +366,30 @@ body{
 .play-btn.playing{background:#ef4444;}
 .play-btn.playing:hover{background:#dc2626;}
 
+/* ── 타임라인 툴팁 말풍선 ── */
+.timeline-tip{
+  position:relative;
+  background:var(--accent);
+  color:#fff;
+  font-size:12px;font-weight:600;
+  padding:7px 14px;
+  border-radius:20px;
+  white-space:nowrap;
+  cursor:pointer;
+  flex-shrink:0;
+  transition:opacity .2s,transform .2s;
+  user-select:none;
+}
+.timeline-tip::before{
+  content:'';
+  position:absolute;
+  left:-7px;top:50%;transform:translateY(-50%);
+  border:5px solid transparent;
+  border-right-color:var(--accent);
+  border-left:none;
+}
+.timeline-tip.hidden{opacity:0;pointer-events:none;transform:translateX(-6px);}
+
 .slider-wrap{flex:1;position:relative;}
 .year-slider{
   width:100%;
@@ -624,6 +648,7 @@ body{
 <!-- BOTTOM: 타임라인 -->
 <footer class="timeline">
   <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+  <div class="timeline-tip" id="timelineTip" onclick="this.classList.add('hidden')">▶ 버튼을 눌러 연도별 예측을 재생하세요 ✕</div>
   <div class="slider-wrap">
     <input type="range" id="yearSlider" class="year-slider"
            min="0" max="6" value="0" step="1">
