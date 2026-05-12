@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>주민등록증 인증</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    font-family: 'Apple SD Gothic Neo', sans-serif;
+    color: #fff;
+  }
+
+  .camera-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  #video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .status-msg {
+    position: absolute;
+    top: 8%;
+    width: 100%;
+    text-align: center;
+    font-size: 17px;
+    font-weight: 600;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  }
+
+  /* 가이드 틀 */
+  .guide-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -55%);
+    width: 90%;
+    aspect-ratio: 1.585;
+    border: 3px solid rgba(255,255,255,0.9);
+    border-radius: 14px;
+  }
+
+  /* 모서리 강조 */
+  .guide-box::before, .guide-box::after,
+  .guide-box .corner-br, .guide-box .corner-bl {
+    content: '';
+    position: absolute;
+    width: 28px; height: 28px;
+    border-color: #FFCC00;
+    border-style: solid;
+  }
+  .guide-box::before  { top:-3px; left:-3px;   border-width:4px 0 0 4px; border-radius:10px 0 0 0; }
+  .guide-box::after   { top:-3px; right:-3px;  border-width:4px 4px 0 0; border-radius:0 10px 0 0; }
+  .guide-box .corner-br { bottom:-3px; right:-3px; border-width:0 4px 4px 0; border-radius:0 0 10px 0; }
+  .guide-box .corner-bl { bottom:-3px; left:-3px;  border-width:0 0 4px 4px; border-radius:0 0 0 10px; }
+
+  .guide-hint {
+    position: absolute;
+    bottom: 28%;
+    width: 100%;
+    text-align: center;
+    font-size: 14px;
+    color: rgba(255,255,255,0.8);
+  }
+
+  /* 촬영 버튼 */
+  .capture-btn {
+    position: absolute;
+    bottom: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: #fff;
+    border: 4px solid #FFCC00;
+    cursor: pointer;
+    box-shadow: 0 0 0 6px rgba(255,255,255,0.3);
+  }
+  .capture-btn:active { transform: translateX(-50%) scale(0.93); }
+
+  /* 결과 패널 */
+  #result-panel {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.88);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    padding: 32px;
+  }
+  #result-panel.show { display: flex; }
+  #result-panel h2 { font-size: 22px; color: #4CAF50; }
+  #result-panel p  { font-size: 16px; color: #eee; text-align: center; line-height: 1.9; white-space: pre-line; }
+  #retry-btn {
+    margin-top: 12px;
+    padding: 14px 36px;
+    background: #FFCC00;
+    color: #000;
+    border: none;
+    border-radius: 24px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  #loading-msg {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  #loading-msg.show { display: flex; }
+
+  canvas { display: none; }
+</style>
+</head>
+<body>
+
+<div class="camera-wrap">
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="canvas"></canvas>
+
+  <div class="status-msg">주민등록증을 틀 안에 맞춰주세요</div>
+
+  <div class="guide-box">
+    <span class="corner-br"></span>
+    <span class="corner-bl"></span>
+  </div>
+
+  <p class="guide-hint">버튼을 눌러 촬영하세요</p>
+  <button class="capture-btn" id="capture-btn"></button>
+
+  <div id="loading-msg">🔍 분석 중...</div>
+
+  <div id="result-panel">
+    <h2>✅ 인증 완료</h2>
+    <p id="result-text"></p>
+    <button id="retry-btn">다시 촬영</button>
+  </div>
+</div>
+
+<script>
+const video       = document.getElementById('video');
+const canvas      = document.getElementById('canvas');
+const captureBtn  = document.getElementById('capture-btn');
+const loadingMsg  = document.getElementById('loading-msg');
+const resultPanel = document.getElementById('result-panel');
+const resultText  = document.getElementById('result-text');
+const retryBtn    = document.getElementById('retry-btn');
+const ctx         = canvas.getContext('2d');
+
+const OCR_SERVER  = '/ocr';
+
+// 카메라 시작
+navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+  .then(stream => { video.srcObject = stream; })
+  .catch(err => { alert('카메라 접근을 허용해 주세요\n' + err); });
+
+// 촬영 버튼 — 가이드 틀 영역만 크롭해서 OCR 전송
+captureBtn.addEventListener('click', () => {
+  const vw = video.videoWidth  || 1280;
+  const vh = video.videoHeight || 720;
+
+  // 전체 프레임 그리기
+  canvas.width  = vw;
+  canvas.height = vh;
+  ctx.drawImage(video, 0, 0);
+
+  // 가이드 틀 영역 계산 (93% 너비, 중앙 정렬)
+  const boxW = vw * 0.90;
+  const boxH = boxW / 1.585;
+  const bx   = (vw - boxW) / 2;
+  const by   = (vh - boxH) / 2 - vh * 0.05; // transform -55% 보정
+
+  // 틀 안만 크롭
+  const cropCanvas = document.createElement('canvas');
+  cropCanvas.width  = boxW;
+  cropCanvas.height = boxH;
+  cropCanvas.getContext('2d').drawImage(canvas, bx, by, boxW, boxH, 0, 0, boxW, boxH);
+
+  loadingMsg.classList.add('show');
+  captureBtn.disabled = true;
+
+  cropCanvas.toBlob(blob => {
+    const form = new FormData();
+    form.append('file', blob, 'id_card.jpg');
+
+    fetch(OCR_SERVER, { method: 'POST', body: form })
+      .then(r => r.json())
+      .then(data => showResult(data))
+      .catch(() => showResult({ name: '(인식 실패)', birthdate: '다시 시도해 주세요' }));
+  }, 'image/jpeg', 0.95);
+});
+
+function showResult(data) {
+  loadingMsg.classList.remove('show');
+  const conf = data.confidence ? `\n평균 신뢰도: ${(data.confidence * 100).toFixed(1)}%` : '';
+  resultText.textContent = `이름: ${data.name || '미인식'}\n생년월일: ${data.birthdate || '미인식'}${conf}`;
+  resultPanel.classList.add('show');
+}
+
+retryBtn.addEventListener('click', () => {
+  resultPanel.classList.remove('show');
+  captureBtn.disabled = false;
+});
+</script>
+</body>
+</html>
