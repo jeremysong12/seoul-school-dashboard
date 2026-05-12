@@ -962,7 +962,10 @@ function renderDetail(id, year) {
     </div>
     ${(BLDG_AGE[sch.name] != null) ? (() => {
       const age = BLDG_AGE[sch.name];
-      const barPct = Math.min(Math.round((age / 50) * 100), 100);
+      const MAX_AGE = 42;
+      const barPct  = Math.min(Math.round((age / MAX_AGE) * 100), 100);
+      const pct22   = Math.round((22 / MAX_AGE) * 100);
+      const pct29   = Math.round((29 / MAX_AGE) * 100);
       const barColor = age >= 29 ? '#ef4444' : age >= 22 ? '#f97316' : '#22c55e';
       return `
         <div class="detail-section">
@@ -975,8 +978,11 @@ function renderDetail(id, year) {
           <div class="fac-bar-bg">
             <div class="fac-bar-fill" style="width:${barPct}%;background:${barColor};transition:width .5s ease;"></div>
           </div>
-          <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:9px;color:var(--text3);">
-            <span>0년</span><span>22년</span><span>29년</span><span>42년+</span>
+          <div style="position:relative;height:14px;margin-top:2px;font-size:9px;color:var(--text3);">
+            <span style="position:absolute;left:0;">0</span>
+            <span style="position:absolute;left:${pct22}%;transform:translateX(-50%);">22년</span>
+            <span style="position:absolute;left:${pct29}%;transform:translateX(-50%);">29년</span>
+            <span style="position:absolute;right:0;">42년</span>
           </div>
         </div>`;
     })() : ''}
