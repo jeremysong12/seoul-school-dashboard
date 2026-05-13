@@ -231,18 +231,28 @@ body{
 .legend-fac-row:last-child{margin-bottom:0;}
 .legend-fac-icon{font-size:16px;width:24px;text-align:center;}
 
-/* ── 학교 선택 안내 힌트 ── */
-.map-hint{
-  position:absolute;bottom:40px;left:50%;transform:translateX(-50%);
-  z-index:900;pointer-events:none;
-  background:rgba(0,0,0,.55);
-  color:#fff;font-size:13px;font-weight:600;
-  padding:8px 20px;border-radius:20px;
-  white-space:nowrap;
+/* ── 초기 진입 오버레이 ── */
+.intro-overlay{
+  position:fixed;inset:0;
+  z-index:9000;
+  background:rgba(10,18,35,.72);
   backdrop-filter:blur(4px);
-  transition:opacity .3s;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:flex-end;
+  padding-bottom:90px;
+  transition:opacity .4s;
 }
-.map-hint.hidden{opacity:0;}
+.intro-overlay.hidden{opacity:0;pointer-events:none;}
+.intro-msg{
+  font-size:22px;font-weight:800;color:#fff;
+  text-shadow:0 2px 12px rgba(0,0,0,.6);
+  margin-bottom:24px;letter-spacing:-.3px;
+}
+.intro-arrow{
+  font-size:48px;line-height:1;
+  animation:bounce .8s ease-in-out infinite alternate;
+}
+@keyframes bounce{from{transform:translateY(0);}to{transform:translateY(10px);}}
 
 /* ── RIGHT DETAIL PANEL ── */
 .detail-panel{
@@ -516,6 +526,12 @@ body{
 </header>
 
 <!-- SINGLE PAGE: 통계 + 지도 통합 -->
+<!-- 초기 진입 오버레이 -->
+<div class="intro-overlay" id="introOverlay">
+  <div class="intro-msg">미래 시간 변화에 따른 폐교 증가 추이를 살펴보세요!</div>
+  <div class="intro-arrow">↙</div>
+</div>
+
 <div class="combined-wrap">
 
 <!-- 상단: 통계 스트립 (3 columns) -->
@@ -590,7 +606,6 @@ body{
   <!-- CENTER: 지도 -->
   <div class="map-wrap">
     <div id="map"></div>
-    <div class="map-hint" id="mapHint">학교를 선택해 주세요</div>
     <div class="risk-legend">
       <div class="legend-title">Risk Legend</div>
       <div class="legend-row">
@@ -1192,7 +1207,6 @@ function vworldSearch(query, type, lat, lng) {
 // ── 학교 선택 ─────────────────────────────────────────────────────────────
 function selectSchool(id) {
   selectedId = id;
-  document.getElementById('mapHint')?.classList.add('hidden');
   const sch = schoolMap[id];
 
   clearFacilities();
@@ -1379,10 +1393,16 @@ function initStatsCharts() {
 }
 
 // ── 슬라이더 ──────────────────────────────────────────────────────────────
+function dismissIntro() {
+  const ov = document.getElementById('introOverlay');
+  if (ov) { ov.classList.add('hidden'); setTimeout(() => ov.remove(), 400); }
+}
 document.getElementById('yearSlider').addEventListener('input', e => {
+  dismissIntro();
   if (isPlaying) togglePlay();
   updateAll(parseInt(e.target.value));
 });
+document.getElementById('playBtn').addEventListener('click', dismissIntro);
 
 // ── 검색 ──────────────────────────────────────────────────────────────────
 document.getElementById('searchInput').addEventListener('input', e => {
