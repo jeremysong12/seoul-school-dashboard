@@ -251,6 +251,8 @@ body{
   display:flex;flex-direction:column;
   overflow-y:auto;
   min-height:0;
+  padding:12px;
+  gap:10px;
 }
 .detail-panel::-webkit-scrollbar{width:4px;}
 .detail-panel::-webkit-scrollbar-track{background:transparent;}
@@ -265,8 +267,10 @@ body{
 .empty-text{font-size:13px;letter-spacing:-.2px;text-align:center;line-height:1.6;}
 
 .detail-hdr{
-  padding:16px 18px 16px;
-  border-bottom:1px solid var(--border);
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px 18px;
   flex-shrink:0;
 }
 .detail-label{
@@ -286,14 +290,16 @@ body{
 }
 
 .detail-section{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
   padding:14px 18px;
-  border-bottom:1px solid var(--border);
 }
-.detail-section:last-child{border-bottom:none;}
 .detail-section-title{
-  font-size:9px;font-weight:700;color:var(--text3);
-  text-transform:uppercase;letter-spacing:1px;
-  margin-bottom:10px;
+  font-size:13px;font-weight:700;color:var(--text);
+  border-left:3px solid var(--accent);
+  padding-left:8px;
+  margin-bottom:14px;
 }
 
 /* 신입생 추이 차트 */
