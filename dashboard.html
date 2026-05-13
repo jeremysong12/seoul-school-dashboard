@@ -1269,10 +1269,11 @@ function togglePlay() {
   isPlaying = !isPlaying;
   const btn = document.getElementById('playBtn');
   if (isPlaying) {
+    if (currentYearIdx === 6) updateAll(0);
     btn.textContent = '⏸';
     btn.classList.add('playing');
     playTimer = setInterval(() => {
-      const next = (currentYearIdx + 1) % 8;
+      const next = (currentYearIdx + 1) % 7;
       updateAll(next);
       if (next === 6) {
         togglePlay(); // 끝에서 자동 정지
