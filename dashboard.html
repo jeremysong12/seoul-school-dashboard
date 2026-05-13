@@ -334,7 +334,7 @@ body{
   background:var(--card);border:1px solid var(--border);
   border-radius:7px;padding:9px 12px;
 }
-.info-label{font-size:10px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.info-label{font-size:10px;font-weight:600;color:var(--text3);margin-bottom:4px;}
 .info-val{font-size:15px;font-weight:700;font-family:'Space Mono',monospace;letter-spacing:-.5px;}
 
 .warning-box{
@@ -448,7 +448,7 @@ body{
 .stat-card.sc-safe::before  {background:var(--safe);}
 .stat-card.sc-total::before {background:var(--accent);}
 .stat-label{
-  font-size:10px;font-weight:700;color:var(--text3);
+  font-size:10px;font-weight:700;color:var(--text);
   letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;
 }
 .stat-num{
@@ -472,7 +472,7 @@ body{
   flex:1;min-height:0;
 }
 .chart-card-title{
-  font-size:11px;font-weight:700;color:var(--text2);
+  font-size:11px;font-weight:700;color:var(--text);
   letter-spacing:-.2px;margin-bottom:10px;flex-shrink:0;
 }
 .chart-canvas-wrap{flex:1;position:relative;min-height:0;}
@@ -962,7 +962,7 @@ function renderDetail(id, year) {
           <div id="detailGradeLabel" style="font-size:13px;font-weight:700;color:${gradeColor};margin-top:2px;">${grade}</div>
         </div>
         <div class="detail-info-cell">
-          <div class="info-label" style="font-size:8px;color:var(--text);">최소 예측 신입생</div>
+          <div class="info-label" style="font-size:8px;">최소 예측 신입생</div>
           <div class="info-val" style="color:var(--danger);font-size:14px;">${sch.minStudents != null ? sch.minStudents : '—'}<small style="font-size:10px;font-weight:400"> 명</small></div>
         </div>
         <div class="detail-info-cell">
