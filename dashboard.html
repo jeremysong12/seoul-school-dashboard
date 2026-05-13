@@ -1014,6 +1014,10 @@ function renderDetail(id, year) {
   const ptColors = YEARS.map(y => y === year ? '#f59e0b' : '#3b82f6');
   const ptSizes  = YEARS.map(y => y === year ? 6 : 3);
 
+  const validPreds = preds.filter(v => v != null);
+  const predMax    = validPreds.length ? Math.max(...validPreds) : 250;
+  const safeYMax   = Math.ceil(predMax * 1.1 / 10) * 10;
+
   const lineLen = YEARS.length;
   enrollChart = new Chart(ctx, {
     type: 'line',
@@ -1082,7 +1086,7 @@ function renderDetail(id, year) {
           grid: { color: 'rgba(30,45,74,0.8)' },
           ticks: { color: '#64748b', font: { size: 10 } },
           min: grade === '폐교위험' ? 5 : grade === '고위험' ? 10 : 0,
-          max: grade === '폐교위험' ? 40 : grade === '고위험' ? 90 : 250,
+          max: grade === '폐교위험' ? 40 : grade === '고위험' ? 90 : safeYMax,
         },
       },
     },
