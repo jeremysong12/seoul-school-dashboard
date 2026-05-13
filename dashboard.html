@@ -393,7 +393,7 @@ body{
   padding:0 2px;margin-top:5px;
 }
 .slider-ticks span{
-  font-size:9px;font-weight:600;color:var(--text3);
+  font-size:12px;font-weight:700;color:var(--text);
   font-family:'Space Mono',monospace;
 }
 
@@ -523,23 +523,31 @@ body{
   <div class="stat-grid-2x2">
     <div class="stat-card sc-danger">
       <div class="stat-label">폐교위험</div>
-      <div id="statDanger" class="stat-num">0</div>
-      <div class="stat-sub">신입생 17명 이하</div>
+      <div style="display:flex;align-items:baseline;gap:4px;">
+        <div id="statDanger" class="stat-num">0</div>
+        <span style="font-size:13px;font-weight:700;color:var(--danger);">개 학교</span>
+      </div>
     </div>
     <div class="stat-card sc-high">
       <div class="stat-label">고위험</div>
-      <div id="statHigh" class="stat-num">0</div>
-      <div class="stat-sub">신입생 18~40명</div>
+      <div style="display:flex;align-items:baseline;gap:4px;">
+        <div id="statHigh" class="stat-num">0</div>
+        <span style="font-size:13px;font-weight:700;color:var(--high);">개 학교</span>
+      </div>
     </div>
     <div class="stat-card sc-safe">
       <div class="stat-label">안전</div>
-      <div id="statSafe" class="stat-num">0</div>
-      <div class="stat-sub">신입생 41명 이상</div>
+      <div style="display:flex;align-items:baseline;gap:4px;">
+        <div id="statSafe" class="stat-num">0</div>
+        <span style="font-size:13px;font-weight:700;color:var(--safe);">개 학교</span>
+      </div>
     </div>
     <div class="stat-card sc-total">
       <div class="stat-label">서울 공립 초등학교</div>
-      <div id="statTotal" class="stat-num">565</div>
-      <div class="stat-sub">2024년 기준 전체</div>
+      <div style="display:flex;align-items:baseline;gap:4px;">
+        <div id="statTotal" class="stat-num">565</div>
+        <span style="font-size:13px;font-weight:700;color:var(--accent);">개 학교</span>
+      </div>
     </div>
   </div>
   <div class="chart-card">
