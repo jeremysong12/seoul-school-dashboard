@@ -899,7 +899,6 @@ function renderList(year, query) {
         <span class="card-name">${s.name}</span>
         <span class="grade-badge ${GRADE_BADGE[s.grade]}">${s.grade}</span>
       </div>
-      <div class="card-sub">${s.dong || ''}</div>
     </div>
   `).join('');
 }
@@ -1377,6 +1376,43 @@ function initStatsCharts() {
   });
 
   // 2) 학교별 신입생 예측 수 분포 (연도별 갱신)
+  // 모든 연도 데이터에서 y축 최대값 계산
+  let histYMax = 0;
+  for (let yi = 0; yi < YEARS.length; yi++) {
+    const d = computeHistData(yi);
+    const m = Math.max(...d);
+    if (m > histYMax) histYMax = m;
+  }
+  // 50 단위로 올림
+  histYMax = Math.ceil(histYMax / 50) * 50;
+
+  // 커스텀 그리드 플러그인: 100단위 실선, 50단위 점선
+  const histGridPlugin = {
+    id: 'histCustomGrid',
+    beforeDatasetsDraw(chart) {
+      const { ctx, chartArea: { left, right, top, bottom }, scales: { y } } = chart;
+      ctx.save();
+      for (let v = 0; v <= histYMax; v += 50) {
+        const yPos = y.getPixelForValue(v);
+        ctx.beginPath();
+        ctx.moveTo(left, yPos);
+        ctx.lineTo(right, yPos);
+        if (v % 100 === 0) {
+          ctx.strokeStyle = 'rgba(30,45,74,0.8)';
+          ctx.setLineDash([]);
+          ctx.lineWidth = 1;
+        } else {
+          ctx.strokeStyle = 'rgba(30,45,74,0.55)';
+          ctx.setLineDash([4, 4]);
+          ctx.lineWidth = 1;
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.restore();
+    }
+  };
+
   histChartInst = new Chart(document.getElementById('histChart').getContext('2d'), {
     type: 'bar',
     data: {
@@ -1400,9 +1436,20 @@ function initStatsCharts() {
       },
       scales: {
         x: { grid:{ color:GRID }, ticks:{ ...TICK, maxRotation:30 } },
-        y: { grid:{ color:GRID }, ticks: TICK, beginAtZero:true },
+        y: {
+          grid: { display: false },
+          ticks: {
+            ...TICK,
+            stepSize: 50,
+            callback: v => v,
+          },
+          beginAtZero: true,
+          min: 0,
+          max: histYMax,
+        },
       },
     },
+    plugins: [histGridPlugin],
   });
 }
 
