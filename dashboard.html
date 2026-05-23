@@ -1135,6 +1135,28 @@ function haversine(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+// ── 동 폴리곤 내부 판별 (Ray-casting, GeoJSON [lng,lat] 기준) ─────────────
+function pointInRing(lat, lng, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0], yi = ring[i][1];
+    const xj = ring[j][0], yj = ring[j][1];
+    if (((yi > lat) !== (yj > lat)) &&
+        (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+function pointInGeoJSON(lat, lng, geom) {
+  if (!geom) return true;
+  if (geom.type === 'Polygon')
+    return pointInRing(lat, lng, geom.coordinates[0]);
+  if (geom.type === 'MultiPolygon')
+    return geom.coordinates.some(poly => pointInRing(lat, lng, poly[0]));
+  return true;
+}
+
 // ── 시설 마커 생성 ────────────────────────────────────────────────────────
 function makeFacMarker(lat, lng, type, name) {
   const fi = FAC_ICONS[type];
@@ -1184,18 +1206,19 @@ function showStaticFacilities(dongNm) {
 }
 
 // ── Vworld POI 검색 — JSONP (GitHub Pages CORS 우회) ─────────────────────
-function vworldSearch(query, type, lat, lng) {
+function vworldSearch(query, type, lat, lng, dongNm) {
   const cbName = '_vw_' + Math.random().toString(36).slice(2);
 
   window[cbName] = function(data) {
     delete window[cbName];
     document.getElementById(cbName)?.remove();
     if (data.response?.status !== 'OK') return;
+    const geom = DONG_GEO[dongNm];
     (data.response.result?.items || []).forEach(item => {
       const iLat = parseFloat(item.point?.y);
       const iLng = parseFloat(item.point?.x);
       if (isNaN(iLat) || isNaN(iLng)) return;
-      if (haversine(lat, lng, iLat, iLng) <= RADIUS_M) {
+      if (pointInGeoJSON(iLat, iLng, geom)) {
         facMarkers.push(makeFacMarker(iLat, iLng, type, item.title));
       }
     });
@@ -1230,15 +1253,26 @@ function selectSchool(id) {
       // 내장 정적 데이터 (청소년·노인) 먼저 표시
       showStaticFacilities(sch.dongNm);
       // Vworld POI — 전체 시설 유형 검색
-      vworldSearch('어린이집',         '유아',   sch.lat, sch.lng);
-      vworldSearch('유치원',           '유아',   sch.lat, sch.lng);
-      vworldSearch('청소년센터',       '청소년', sch.lat, sch.lng);
-      vworldSearch('지역아동센터',     '청소년', sch.lat, sch.lng);
-      vworldSearch('노인복지관',       '노인',   sch.lat, sch.lng);
-      vworldSearch('경로당',           '노인',   sch.lat, sch.lng);
-      vworldSearch('다문화가족지원센터','다문화', sch.lat, sch.lng);
-      vworldSearch('장애인복지관',     '장애인', sch.lat, sch.lng);
-      vworldSearch('장애인활동지원',   '장애인', sch.lat, sch.lng);
+      vworldSearch('어린이집',           '유아',   sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('유치원',             '유아',   sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('육아종합지원센터',   '유아',   sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('청소년센터',         '청소년', sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('지역아동센터',       '청소년', sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('청소년수련관',       '청소년', sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('청소년문화의집',     '청소년', sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('청소년상담복지센터', '청소년', sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('노인복지관',         '노인',   sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('경로당',             '노인',   sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('노인요양시설',       '노인',   sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('노인교실',           '노인',   sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('실버복지관',         '노인',   sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('다문화가족지원센터', '다문화', sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('건강가정지원센터',   '다문화', sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('장애인복지관',       '장애인', sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('장애인활동지원',     '장애인', sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('장애인주간보호',     '장애인', sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('발달장애인지원센터', '장애인', sch.lat, sch.lng, sch.dongNm);
+      vworldSearch('수어통역센터',       '장애인', sch.lat, sch.lng, sch.dongNm);
     }
   }
 
