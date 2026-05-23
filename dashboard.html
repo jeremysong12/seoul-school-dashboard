@@ -1157,6 +1157,14 @@ function pointInGeoJSON(lat, lng, geom) {
   return true;
 }
 
+// 동명이 중복될 때 학교 좌표(schLat, schLng)로 올바른 폴리곤을 선택
+function findDongGeom(dongNm, schLat, schLng) {
+  const geoms = DONG_GEO[dongNm];
+  if (!geoms || geoms.length === 0) return null;
+  if (geoms.length === 1) return geoms[0];
+  return geoms.find(g => pointInGeoJSON(schLat, schLng, g)) || geoms[0];
+}
+
 // ── 시설 마커 생성 ────────────────────────────────────────────────────────
 function makeFacMarker(lat, lng, type, name) {
   const fi = FAC_ICONS[type];
@@ -1184,8 +1192,8 @@ function clearFacilities() {
 }
 
 // ── 동 경계 폴리곤 표시 ───────────────────────────────────────────────────
-function showDongPolygon(dongNm) {
-  const geom = DONG_GEO[dongNm];
+function showDongPolygon(dongNm, schLat, schLng) {
+  const geom = findDongGeom(dongNm, schLat, schLng);
   if (!geom) return;
   dongPolygon = L.geoJSON(geom, {
     style: {
@@ -1213,7 +1221,7 @@ function vworldSearch(query, type, lat, lng, dongNm) {
     delete window[cbName];
     document.getElementById(cbName)?.remove();
     if (data.response?.status !== 'OK') return;
-    const geom = DONG_GEO[dongNm];
+    const geom = findDongGeom(dongNm, lat, lng);
     (data.response.result?.items || []).forEach(item => {
       const iLat = parseFloat(item.point?.y);
       const iLng = parseFloat(item.point?.x);
@@ -1249,7 +1257,7 @@ function selectSchool(id) {
 
     if (sch.dongNm) {
       // 동 경계 폴리곤 표시
-      showDongPolygon(sch.dongNm);
+      showDongPolygon(sch.dongNm, sch.lat, sch.lng);
       // 내장 정적 데이터 (청소년·노인) 먼저 표시
       showStaticFacilities(sch.dongNm);
       // Vworld POI — 전체 시설 유형 검색
@@ -1511,7 +1519,9 @@ fetch('seoul_dong.geojson')
   .then(r => r.json())
   .then(gj => {
     gj.features.forEach(f => {
-      DONG_GEO[f.properties.ADM_NM] = f.geometry;
+      const nm = f.properties.ADM_NM;
+      if (!DONG_GEO[nm]) DONG_GEO[nm] = [];
+      DONG_GEO[nm].push(f.geometry);
     });
   })
   .catch(() => {});
