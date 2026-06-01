@@ -688,6 +688,7 @@ const years=[2027,2028,2029,2030,2031,2032,2033];
 const dangerCounts=[10,12,14,15,18,18,18];
 const highCounts=[59,70,75,79,84,89,93];
 let DONG_GEO = {};
+let FAC_DATA  = null;
 
 // ── 상수 ──────────────────────────────────────────────────────────────────
 const YEARS = [2027,2028,2029,2030,2031,2032,2033];
@@ -1203,13 +1204,13 @@ function showDongPolygon(dongNm, schLat, schLng) {
   }).addTo(leafMap);
 }
 
-// ── 정적 시설 표시 (청소년·노인) — 동명 매칭 ────────────────────────────
+// ── 정적 시설 표시 (5개 유형) — 동명 매칭 ───────────────────────────────
 function showStaticFacilities(dongNm) {
-  RAW.youths.forEach(f => {    // [name, lat, lng, dong_nm]
-    if (f[3] === dongNm) facMarkers.push(makeFacMarker(f[1], f[2], '청소년', f[0]));
-  });
-  RAW.elderlys.forEach(f => {  // [name, lat, lng, dong_nm]
-    if (f[3] === dongNm) facMarkers.push(makeFacMarker(f[1], f[2], '노인', f[0]));
+  if (!FAC_DATA) return;
+  ['유아','청소년','노인','다문화','장애인'].forEach(type => {
+    (FAC_DATA[type] || []).forEach(f => {  // [name, lat, lng, dongNm]
+      if (f[3] === dongNm) facMarkers.push(makeFacMarker(f[1], f[2], type, f[0]));
+    });
   });
 }
 
@@ -1261,26 +1262,13 @@ function selectSchool(id) {
       // 내장 정적 데이터 (청소년·노인) 먼저 표시
       showStaticFacilities(sch.dongNm);
       // Vworld POI — 전체 시설 유형 검색
+      // 유아 — 어린이집·유치원은 CSV에 없어서 API로 보완
       vworldSearch('어린이집',           '유아',   sch.lat, sch.lng, sch.dongNm);
       vworldSearch('유치원',             '유아',   sch.lat, sch.lng, sch.dongNm);
       vworldSearch('육아종합지원센터',   '유아',   sch.lat, sch.lng, sch.dongNm);
-      vworldSearch('청소년센터',         '청소년', sch.lat, sch.lng, sch.dongNm);
-      vworldSearch('지역아동센터',       '청소년', sch.lat, sch.lng, sch.dongNm);
-      vworldSearch('청소년수련관',       '청소년', sch.lat, sch.lng, sch.dongNm);
-      vworldSearch('청소년문화의집',     '청소년', sch.lat, sch.lng, sch.dongNm);
-      vworldSearch('청소년상담복지센터', '청소년', sch.lat, sch.lng, sch.dongNm);
-      vworldSearch('노인복지관',         '노인',   sch.lat, sch.lng, sch.dongNm);
-      vworldSearch('경로당',             '노인',   sch.lat, sch.lng, sch.dongNm);
-      vworldSearch('노인요양시설',       '노인',   sch.lat, sch.lng, sch.dongNm);
-      vworldSearch('노인교실',           '노인',   sch.lat, sch.lng, sch.dongNm);
-      vworldSearch('실버복지관',         '노인',   sch.lat, sch.lng, sch.dongNm);
+      // 다문화 — CSV 43개뿐이라 API로 보완
       vworldSearch('다문화가족지원센터', '다문화', sch.lat, sch.lng, sch.dongNm);
       vworldSearch('건강가정지원센터',   '다문화', sch.lat, sch.lng, sch.dongNm);
-      vworldSearch('장애인복지관',       '장애인', sch.lat, sch.lng, sch.dongNm);
-      vworldSearch('장애인활동지원',     '장애인', sch.lat, sch.lng, sch.dongNm);
-      vworldSearch('장애인주간보호',     '장애인', sch.lat, sch.lng, sch.dongNm);
-      vworldSearch('발달장애인지원센터', '장애인', sch.lat, sch.lng, sch.dongNm);
-      vworldSearch('수어통역센터',       '장애인', sch.lat, sch.lng, sch.dongNm);
     }
   }
 
@@ -1513,6 +1501,12 @@ document.getElementById('searchInput').addEventListener('input', e => {
 });
 
 // ── 초기화 ────────────────────────────────────────────────────────────────
+
+// ── 시설 정적 데이터 비동기 로드 ─────────────────────────────────────────
+fetch('facility_static.json')
+  .then(r => r.json())
+  .then(data => { FAC_DATA = data; })
+  .catch(() => {});
 
 // ── 행정동 경계 비동기 로드 ──────────────────────────────────────────────
 fetch('seoul_dong.geojson')
